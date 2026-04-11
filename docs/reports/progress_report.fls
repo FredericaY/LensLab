@@ -1,0 +1,11 @@
+PWD c:/Work/Projects/LensLab/docs/reports
+INPUT c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf.cnf
+INPUT c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-dist/web2c/texmf.cnf
+INPUT c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt
+INPUT c:/Work/Projects/LensLab/docs/reports/progress_report.tex
+OUTPUT progress_report.log
+INPUT c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-dist/tex/latex/base/article.cls
+INPUT c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-dist/tex/latex/base/article.cls
+INPUT c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-dist/tex/latex/base/size10.clo
+INPUT c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-dist/tex/latex/base/size10.clo
+INPUT c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-dist/tex/latex/base/size10.clo

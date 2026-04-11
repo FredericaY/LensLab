@@ -1,0 +1,269 @@
+{
+  "schema_version": "1.0",
+  "camera_name": "default_camera",
+  "image_width": 5712,
+  "image_height": 4284,
+  "intrinsics": {
+    "fx": 4115.306101530174,
+    "fy": 4115.3872616456065,
+    "cx": 2863.5214738529817,
+    "cy": 2168.2994895844377
+  },
+  "distortion_model": "opencv_rational",
+  "distortion_coeffs": {
+    "k1": -0.5813625264320209,
+    "k2": 21.037573246801742,
+    "p1": 0.0004763451503308046,
+    "p2": -5.014671768082666e-05,
+    "k3": 3.0871514407907443,
+    "k4": -0.6995147927296744,
+    "k5": 20.66320938566261,
+    "k6": 4.621350943153288
+  },
+  "calibration_target": {
+    "type": "charuco",
+    "squares_x": 7,
+    "squares_y": 5,
+    "square_size_m": 0.025,
+    "marker_size_m": 0.018,
+    "aruco_dictionary": "DICT_4X4_50"
+  },
+  "reprojection_error": {
+    "mean": 0.5460298604435391,
+    "rms": 1.2665422059341342
+  },
+  "detection_summary": {
+    "board_type": "charuco",
+    "aruco_dictionary": "DICT_4X4_50",
+    "detected_image_count": 15,
+    "failed_image_count": 0,
+    "min_required_images": 12,
+    "ready_for_calibration": true,
+    "images": [
+      {
+        "image_path": "data\\calibration_images\\003.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\011.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\012.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\013.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\014.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\015.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\016.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\017.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\018.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\019.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\020.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\026.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\027.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\028.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      },
+      {
+        "image_path": "data\\calibration_images\\029.png",
+        "status": "charuco_detected",
+        "image_width": 5712,
+        "image_height": 4284,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true
+      }
+    ]
+  },
+  "calibration_summary": {
+    "success": true,
+    "reason": null,
+    "used_image_count": 15,
+    "per_view_errors": [
+      {
+        "view_index": 0,
+        "point_count": 24,
+        "mean_error": 0.34375643730163574
+      },
+      {
+        "view_index": 1,
+        "point_count": 24,
+        "mean_error": 0.24080942571163177
+      },
+      {
+        "view_index": 2,
+        "point_count": 24,
+        "mean_error": 0.5143195986747742
+      },
+      {
+        "view_index": 3,
+        "point_count": 24,
+        "mean_error": 1.7631282806396484
+      },
+      {
+        "view_index": 4,
+        "point_count": 24,
+        "mean_error": 0.23524267971515656
+      },
+      {
+        "view_index": 5,
+        "point_count": 24,
+        "mean_error": 0.3630079925060272
+      },
+      {
+        "view_index": 6,
+        "point_count": 24,
+        "mean_error": 0.8148984909057617
+      },
+      {
+        "view_index": 7,
+        "point_count": 24,
+        "mean_error": 0.3531884253025055
+      },
+      {
+        "view_index": 8,
+        "point_count": 24,
+        "mean_error": 0.3807872235774994
+      },
+      {
+        "view_index": 9,
+        "point_count": 24,
+        "mean_error": 0.25626346468925476
+      },
+      {
+        "view_index": 10,
+        "point_count": 24,
+        "mean_error": 0.363757461309433
+      },
+      {
+        "view_index": 11,
+        "point_count": 24,
+        "mean_error": 0.3347052037715912
+      },
+      {
+        "view_index": 12,
+        "point_count": 24,
+        "mean_error": 0.2793252766132355
+      },
+      {
+        "view_index": 13,
+        "point_count": 24,
+        "mean_error": 0.6187828779220581
+      },
+      {
+        "view_index": 14,
+        "point_count": 24,
+        "mean_error": 1.3284751176834106
+      }
+    ]
+  },
+  "notes": {
+    "coordinate_convention": "opencv_camera",
+    "generated_by": "LensLab calibration pipeline",
+    "status": "calibration_complete",
+    "image_count": 15,
+    "todo": "Add undistortion preview export and optional debug overlays."
+  }
+}

@@ -1,258 +1,251 @@
 # LensLab
 
-LensLab is a Unity-based computer vision tool for **camera calibration,
-real-time GPU lens undistortion, and virtual camera matching**.
+LensLab is a Unity-facing computer vision project for camera calibration, GPU undistortion, pose estimation, and virtual camera matching.
+
+This repository is being developed as a practical vertical slice rather than a set of disconnected experiments. The current milestone delivers a complete offline validation chain from Python/OpenCV into Unity.
+
+## Current Milestone Status
+
+The project has completed the following stage:
+
+1. ChArUco-based camera calibration in Python/OpenCV
+2. Shared calibration JSON export
+3. Unity-side calibration loading
+4. GPU undistortion validation against a CPU reference
+5. Calibrated Unity camera projection mapping
+6. Single-image ChArUco pose estimation in Python
+7. Unity pose loading and board-region validation against the reference image
+
+At the end of this milestone, the system can:
+
+- calibrate a camera from ChArUco images
+- export intrinsics and distortion coefficients to JSON
+- undistort images in both Python and Unity
+- map calibrated intrinsics onto a Unity Camera
+- estimate board pose from a known ChArUco target
+- render a Unity-side board region back onto the target image for validation
+
+This means the main offline integration path is working end-to-end.
+
+## What Has Been Validated
+
+### Python / OpenCV
+
+- ChArUco detection and frame filtering
+- camera calibration with reprojection statistics
+- undistortion preview generation
+- single-image pose estimation with `solvePnP`
+- shared JSON export for calibration and pose
+
+### Unity
+
+- loading calibration JSON from `Resources`
+- compute-shader GPU undistortion
+- CPU vs GPU undistortion comparison
+- calibrated projection matrix application to `Camera.projectionMatrix`
+- loading pose JSON from `Resources`
+- rendering a board-aligned validation surface over the reference image
 
-The project bridges classical computer vision algorithms and real-time
-graphics pipelines by integrating OpenCV calibration with Unity
-rendering workflows. It provides an engine-level plugin that enables
-accurate alignment between real camera images and virtual content.
+## Repository Structure
 
-LensLab is designed for applications such as:
+```text
+LensLab/
++-- calibration/
+|   +-- configs/
+|   |   \-- charuco_board.yaml
+|   +-- output/
+|   |   +-- camera_calibration.json
+|   |   +-- pose_estimation/
+|   |   \-- undistort_preview/
+|   \-- scripts/
+|       +-- calibrate_camera.py
+|       +-- estimate_pose.py
+|       \-- undistort_preview.py
++-- data/
+|   +-- calibration_images/
+|   \-- samples/
++-- docs/
+|   +-- architecture/
+|   +-- notes/
+|   \-- reports/
++-- native_plugin/
++-- shaders/
++-- unity_project/
+|   \-- LensLab/
+|       \-- Assets/
+|           +-- Plugins/
+|           |   \-- LensLab/
+|           |       +-- Resources/
+|           |       +-- Runtime/
+|           |       \-- Shaders/
+|           \-- Scenes/
+\-- README.md
+```
 
--   Virtual production
--   AR preview
--   Mixed reality visualization
--   Camera-space debugging in game engines
+## Key Runtime Files
 
-------------------------------------------------------------------------
+### Python
 
-# Features
+- `calibration/scripts/calibrate_camera.py`
+  builds calibration results from ChArUco images
+- `calibration/scripts/undistort_preview.py`
+  exports CPU undistortion previews and Unity reference images
+- `calibration/scripts/estimate_pose.py`
+  estimates pose and exports pose JSON with board-model data
 
-## Camera Calibration
+### Unity Runtime
 
-LensLab performs camera calibration using a set of calibration-board
-images.
+- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabCalibrationLoader.cs`
+- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabUndistortionController.cs`
+- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabCameraProjectionController.cs`
+- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabPoseLoader.cs`
+- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabProjectionValidationOverlay.cs`
+- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabPoseBoardDebug.cs`
 
-The calibration stage estimates:
+### Unity Resources
 
--   Camera intrinsic matrix
--   Lens distortion coefficients
--   Reprojection error statistics
+- `unity_project/LensLab/Assets/Plugins/LensLab/Resources/LensLab/lenslab_calibration.json`
+- `unity_project/LensLab/Assets/Plugins/LensLab/Resources/LensLab/pose_003.json`
+- `unity_project/LensLab/Assets/Plugins/LensLab/Resources/LensLab/References/pose_reference_003.png`
 
-Calibration is implemented using OpenCV's standard camera calibration
-pipeline.
+## Shared Data Contracts
 
-------------------------------------------------------------------------
+### Calibration JSON
 
-## Real-Time GPU Lens Undistortion
+Primary file:
 
-After calibration, LensLab performs real-time undistortion of incoming
-video frames.
+- `calibration/output/camera_calibration.json`
 
-Instead of applying the correction on the CPU, the project implements
-GPU-based remapping using a compute shader.
+Contains:
 
-Pipeline:
+- image resolution
+- `fx`, `fy`, `cx`, `cy`
+- OpenCV rational distortion coefficients
+- calibration target metadata
+- reprojection summary
 
-    camera frame
-        ↓
-    UV remapping
-        ↓
-    compute shader
-        ↓
-    undistorted frame
+### Pose JSON
 
-This allows real-time processing inside the Unity rendering pipeline.
+Primary file:
 
-------------------------------------------------------------------------
+- `calibration/output/pose_estimation/003_pose.json`
 
-## Virtual Camera Matching
+Contains:
 
-LensLab can estimate camera pose using a known planar calibration board
-or marker pattern.
+- `rvec` / `tvec`
+- pose reprojection error
+- board-model information exported from OpenCV
+- reference image metadata
 
-The system detects board corners or markers and solves the camera pose
-using a Perspective-n-Point formulation.
+## Current Recommended Unity Validation Setup
 
-The estimated pose is applied to a Unity virtual camera or virtual
-object, enabling correct alignment between the real scene and virtual
-content.
+For the cleanest stage-end validation scene, keep only these scene objects:
 
-------------------------------------------------------------------------
+### `Main Camera`
 
-# System Architecture
+Attach:
 
-The system combines computer vision, graphics programming, and engine
-integration.
+- `LensLabCameraProjectionController`
+- `LensLabProjectionValidationOverlay`
+- `LensLabPoseBoardDebug`
 
-    Calibration images
-            ↓
-    OpenCV camera calibration
-            ↓
-    intrinsics + distortion parameters
-            ↓
-    Unity plugin loads parameters
-            ↓
-    GPU undistortion (compute shader)
-            ↓
-    marker detection + solvePnP
-            ↓
-    virtual camera alignment
+Recommended references:
 
-------------------------------------------------------------------------
+- `LensLabCameraProjectionController.Calibration Loader` -> `LensLabBootstrap`
+- `LensLabProjectionValidationOverlay.Calibration Loader` -> `LensLabBootstrap`
+- `LensLabPoseBoardDebug.Pose Loader` -> `LensLabBootstrap`
+- `LensLabPoseBoardDebug.Validation Overlay` -> `Main Camera`
+- `LensLabPoseBoardDebug.Target Camera` -> `Main Camera`
 
-# Repository Structure
+### `LensLabBootstrap`
 
-    LensLab
-    │
-    ├── calibration/
-    │   Python notebooks and scripts for camera calibration
-    │
-    ├── unity_project/
-    │   Unity project containing the LensLab plugin and demo scene
-    │
-    ├── native_plugin/
-    │   C++ native plugin for GPU processing
-    │
-    ├── shaders/
-    │   HLSL compute shaders for undistortion remapping
-    │
-    ├── data/
-    │   example calibration images
-    │
-    ├── docs/
-    │   project report and technical documentation
-    │
-    └── README.md
+Attach:
 
-------------------------------------------------------------------------
+- `LensLabCalibrationLoader`
+- `LensLabPoseLoader`
 
-# Installation
+### `Directional Light`
 
-## Requirements
+- default settings are fine
 
--   Windows
--   Unity 2022 or later
--   Python 3.9+
--   OpenCV
--   Visual Studio (for native plugin compilation)
--   GPU supporting Direct3D 11
+For this stage, legacy helper objects such as the old three-panel undistortion preview UI or projection alignment gizmos are not required in the scene.
 
-------------------------------------------------------------------------
+## Stage-End Interpretation
 
-## Clone the Repository
+The current stage should be interpreted as an offline integration milestone, not a finished runtime plugin.
 
-    git clone https://github.com/FredericaY/LensLab.git
+What is complete:
 
-------------------------------------------------------------------------
+- the core math/data path from OpenCV to Unity
+- JSON contracts for calibration and pose
+- GPU undistortion correctness against a CPU reference
+- calibrated projection mapping in Unity
+- pose-driven board-region validation
 
-## Install Python Dependencies
+What is not yet complete:
 
-    pip install opencv-python numpy matplotlib
+- live camera ingestion
+- real-time pose tracking inside Unity
+- pose smoothing / jitter handling
+- final virtual camera driving workflow
+- packaging as a polished production plugin
 
-------------------------------------------------------------------------
+## Next Stage
 
-## Open the Unity Project
+The next stage will focus on runtime-facing content anchoring and reporting:
 
-Open the `unity_project` folder in Unity Hub.
+- replace the debug board overlay with virtual content anchored on the detected board
+- formalize the professor-facing progress report
+- prepare a cleaner demo scene and milestone documentation
 
-------------------------------------------------------------------------
+## Decisions Log
 
-# Usage
+### 2026-03-29
 
-## Step 1: Collect Calibration Images
+Locked project decisions:
 
-Print a checkerboard or ChArUco board and capture **15--30 images** from
-different viewpoints.
+1. Build a complete vertical slice before optimization work.
+2. Use JSON as the first shared interchange format.
+3. Treat Python/OpenCV as the source of truth for calibration math.
+4. Centralize OpenCV-to-Unity conversion rather than duplicating it.
+5. Start GPU undistortion with a direct compute-shader implementation.
 
-------------------------------------------------------------------------
+### 2026-04-10
 
-## Step 2: Run Calibration
+Milestone closure decisions:
 
-Run the calibration script:
+1. The current phase ends after offline pose-to-Unity board validation is working.
+2. `pose_reference_003.png` is the canonical visual validation image for this milestone.
+3. Scene validation for this phase should be reduced to the smallest useful setup.
+4. Legacy door-frame and multi-panel comparison helpers are no longer the primary validation path.
 
-    python calibration/calibrate_camera.py
+## Environment
 
-This will produce:
+Recommended baseline:
 
--   camera matrix
--   distortion coefficients
--   reprojection error report
+- Windows
+- Unity 2022.3+
+- Python 3.10
+- `opencv-contrib-python`
+- Direct3D 11 capable GPU
 
-------------------------------------------------------------------------
+Suggested Python packages:
 
-## Step 3: Import Parameters into Unity
+```text
+numpy
+scipy
+matplotlib
+pyyaml
+jupyter
+opencv-contrib-python
+```
 
-Load the generated parameters into the LensLab plugin.
+## Author
 
-------------------------------------------------------------------------
-
-## Step 4: Run Real-Time Undistortion
-
-Start the Unity demo scene.
-
-The system will:
-
--   capture camera frames
--   apply GPU undistortion
--   display original and corrected images
-
-------------------------------------------------------------------------
-
-## Step 5: Pose Estimation
-
-When a calibration board or marker is visible, the system estimates
-camera pose and aligns virtual objects with the real scene.
-
-------------------------------------------------------------------------
-
-# Evaluation
-
-The system is evaluated using several metrics.
-
-### Calibration Accuracy
-
-Measured using reprojection error.
-
-### Undistortion Quality
-
-Visual comparison between distorted and corrected images.
-
-### Runtime Performance
-
-Frame processing time measured on GPU.
-
-Typical results:
-
-  Resolution   GPU Time
-  ------------ -----------
-  720p         \~1--2 ms
-  1080p        \~2--4 ms
-
-------------------------------------------------------------------------
-
-# Dependencies
-
-LensLab builds on several widely used libraries:
-
--   OpenCV
--   Unity Engine
--   Direct3D 11
--   HLSL compute shaders
-
-------------------------------------------------------------------------
-
-# Motivation
-
-LensLab was developed as a computer vision course project focused on
-integrating classical vision algorithms with real-time graphics engine
-workflows.
-
-Instead of focusing purely on model training, the project demonstrates
-how computer vision techniques can be integrated into real engine tools
-used in interactive graphics systems.
-
-------------------------------------------------------------------------
-
-# Author
-
-Julie Yang\
-Computer Science\
+Julie Yang  
+Computer Science  
 CSE 559a Computer Vision
 
-------------------------------------------------------------------------
-
-# License
+## License
 
 MIT License

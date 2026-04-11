@@ -1,0 +1,24 @@
+﻿camera_name: default_camera
+distortion_model: opencv_rational
+
+input:
+  image_dir: data/calibration_images
+  image_glob: "*.png"
+
+output:
+  output_dir: calibration/output
+  calibration_json: camera_calibration.json
+
+board:
+  type: charuco
+  squares_x: 7
+  squares_y: 5
+  square_size_m: 0.025
+  marker_size_m: 0.018
+  aruco_dictionary: DICT_4X4_50
+
+calibration:
+  fix_principal_point: false
+  zero_tangent_dist: false
+  use_rational_model: true
+  min_image_count: 12

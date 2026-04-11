@@ -1,0 +1,16 @@
+# Fdb version 4
+["pdflatex"] 1775881986.45569 "c:/Work/Projects/LensLab/docs/reports/progress_report.tex" "progress_report.pdf" "progress_report" 1775881986.8475 2
+  "c:/Work/Projects/LensLab/docs/reports/progress_report.tex" 1775881984 11612 07e0d73dac063a0b701f2813f3a20018 ""
+  "c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-dist/tex/latex/base/article.cls" 1757796138 20144 b966087dda3b194755eb460d32e2ef75 ""
+  "c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-dist/tex/latex/base/size10.clo" 1757796138 8448 686612a86f0e04f41ea577f5ec7e83d8 ""
+  "c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-dist/web2c/texmf.cnf" 1757794250 42213 4e2ca030e8e2640502016e9e45868dcb ""
+  "c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1757798644 3606080 704a7debb5cf9a9f23afdbb75db05d3c ""
+  "c:/Work/Work_Programs/Latex/TexLive/root/texlive/2025/texmf.cnf" 1757798568 713 e69b156964470283e0530f5060668171 ""
+  "cvpr.sty" 0 -1 0 ""
+  "progress_report.aux" 1775881978 32 3985256e7290058c681f74d7a3565a19 "pdflatex"
+  "progress_report.tex" 1775881984 11612 07e0d73dac063a0b701f2813f3a20018 ""
+  (generated)
+  "progress_report.aux"
+  "progress_report.log"
+  "progress_report.pdf"
+  (rewritten before read)
