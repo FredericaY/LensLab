@@ -13,9 +13,10 @@ namespace LensLab.Runtime
 
         [Header("Background")]
         [SerializeField] private Texture backgroundTexture;
-        [SerializeField] private string backgroundResourcesPath = "LensLab/References/pose_reference_003";
+        [SerializeField] private string backgroundResourcesPath = "LensLab/References/pose_reference";
         [SerializeField] private bool loadBackgroundFromResourcesIfMissing = true;
         [SerializeField] private float backgroundDistance = 3f;
+        [SerializeField] private bool renderBackgroundInCanvas = false;
         [SerializeField] private bool renderBackgroundInWorldSpace = true;
 
         [Header("Layout")]
@@ -39,6 +40,7 @@ namespace LensLab.Runtime
 
         private const string OverlayRootName = "LensLabProjectionValidationOverlay_Runtime";
         private const string BackgroundQuadName = "LensLabProjectionValidationBackground_Runtime";
+        private const HideFlags RuntimeHideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
 
         private Canvas overlayCanvas;
         private RectTransform overlayRoot;
@@ -46,6 +48,7 @@ namespace LensLab.Runtime
         private RectTransform principalHorizontal;
         private RectTransform principalVertical;
         private Image[] borderImages;
+        private RawImage backgroundRawImage;
         private Transform backgroundQuadRoot;
         private MeshRenderer backgroundRenderer;
         private MeshFilter backgroundMeshFilter;
@@ -55,6 +58,7 @@ namespace LensLab.Runtime
 
         public Camera TargetCamera => targetCamera;
         public float BackgroundDistance => backgroundDistance;
+        public Texture BackgroundTexture => backgroundTexture;
 
         private void Reset()
         {
@@ -94,6 +98,7 @@ namespace LensLab.Runtime
             EnsureOverlayHierarchy();
             EnsureBackgroundQuad();
             ApplyViewportRect(viewportPixelRect, calibration);
+            UpdateCanvasBackground();
             UpdateBackgroundQuad();
 
             if (verboseLogging && viewportPixelRect != lastViewportPixelRect)
@@ -102,6 +107,30 @@ namespace LensLab.Runtime
             }
 
             lastViewportPixelRect = viewportPixelRect;
+        }
+
+        public void SetBackgroundTexture(Texture texture, bool refreshNow = true)
+        {
+            backgroundTexture = texture;
+            if (texture != null)
+            {
+                loadBackgroundFromResourcesIfMissing = false;
+            }
+
+            if (refreshNow)
+            {
+                RefreshOverlay();
+            }
+        }
+
+        public void SetBackgroundRenderMode(bool useCanvasBackground, bool useWorldBackground, bool refreshNow = true)
+        {
+            renderBackgroundInCanvas = useCanvasBackground;
+            renderBackgroundInWorldSpace = useWorldBackground;
+            if (refreshNow)
+            {
+                RefreshOverlay();
+            }
         }
 
         private void SuppressLegacyPreviewUI()
@@ -242,6 +271,7 @@ namespace LensLab.Runtime
             }
 
             var rootObject = new GameObject(OverlayRootName, typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            rootObject.hideFlags = RuntimeHideFlags;
             rootObject.transform.SetParent(transform, false);
 
             overlayRoot = rootObject.GetComponent<RectTransform>();
@@ -261,6 +291,8 @@ namespace LensLab.Runtime
             scaler.matchWidthOrHeight = 0.5f;
 
             frameRect = CreateRect("ImageFrame", overlayRoot, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+
+            backgroundRawImage = CreateBackgroundImage("BackgroundImage", frameRect);
 
             borderImages = new Image[4];
             borderImages[0] = CreateBorder("BorderTop", frameRect);
@@ -286,6 +318,7 @@ namespace LensLab.Runtime
             }
 
             var quadObject = new GameObject(BackgroundQuadName, typeof(MeshFilter), typeof(MeshRenderer));
+            quadObject.hideFlags = RuntimeHideFlags;
             quadObject.transform.SetParent(targetCamera != null ? targetCamera.transform : transform, false);
             backgroundQuadRoot = quadObject.transform;
 
@@ -293,8 +326,10 @@ namespace LensLab.Runtime
             backgroundRenderer = quadObject.GetComponent<MeshRenderer>();
 
             backgroundMaterial = new Material(Shader.Find("Unlit/Texture"));
+            backgroundMaterial.hideFlags = RuntimeHideFlags;
             backgroundRenderer.sharedMaterial = backgroundMaterial;
             backgroundMesh = new Mesh { name = "LensLabProjectionValidationBackgroundMesh" };
+            backgroundMesh.hideFlags = RuntimeHideFlags;
             backgroundMeshFilter.sharedMesh = backgroundMesh;
             backgroundRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             backgroundRenderer.receiveShadows = false;
@@ -321,7 +356,7 @@ namespace LensLab.Runtime
                 return;
             }
 
-            var shouldShow = renderBackgroundInWorldSpace && targetCamera != null && backgroundTexture != null;
+            var shouldShow = renderBackgroundInWorldSpace && !renderBackgroundInCanvas && targetCamera != null && backgroundTexture != null;
             backgroundRenderer.enabled = shouldShow;
             if (!shouldShow)
             {
@@ -355,6 +390,22 @@ namespace LensLab.Runtime
             backgroundMesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
             backgroundMesh.RecalculateNormals();
             backgroundMesh.RecalculateBounds();
+        }
+
+        private void UpdateCanvasBackground()
+        {
+            if (backgroundRawImage == null)
+            {
+                return;
+            }
+
+            backgroundRawImage.enabled = renderBackgroundInCanvas && backgroundTexture != null;
+            backgroundRawImage.texture = backgroundTexture;
+            backgroundRawImage.color = Color.white;
+            backgroundRawImage.rectTransform.anchorMin = Vector2.zero;
+            backgroundRawImage.rectTransform.anchorMax = Vector2.one;
+            backgroundRawImage.rectTransform.offsetMin = Vector2.zero;
+            backgroundRawImage.rectTransform.offsetMax = Vector2.zero;
         }
 
         private void ApplyBorders(Vector2 frameSize)
@@ -434,6 +485,7 @@ namespace LensLab.Runtime
         private static RectTransform CreateRect(string name, Transform parent, Vector2 anchoredPosition, Vector2 pivot, Vector2 anchorMin, Vector2 anchorMax)
         {
             var go = new GameObject(name, typeof(RectTransform));
+            go.hideFlags = RuntimeHideFlags;
             go.transform.SetParent(parent, false);
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = anchorMin;
@@ -446,8 +498,19 @@ namespace LensLab.Runtime
         private static Image CreateBorder(string name, Transform parent)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.hideFlags = RuntimeHideFlags;
             go.transform.SetParent(parent, false);
             var image = go.GetComponent<Image>();
+            image.raycastTarget = false;
+            return image;
+        }
+
+        private static RawImage CreateBackgroundImage(string name, Transform parent)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(RawImage));
+            go.hideFlags = RuntimeHideFlags;
+            go.transform.SetParent(parent, false);
+            var image = go.GetComponent<RawImage>();
             image.raycastTarget = false;
             return image;
         }
@@ -455,6 +518,7 @@ namespace LensLab.Runtime
         private static RectTransform CreateMarker(string name, Transform parent)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.hideFlags = RuntimeHideFlags;
             go.transform.SetParent(parent, false);
             var image = go.GetComponent<Image>();
             image.raycastTarget = false;

@@ -71,6 +71,18 @@ build/
 *.shadercache
 
 ############################################
+# LensLab generated outputs
+############################################
+
+calibration/output/live_capture/*
+!calibration/output/live_capture/.gitkeep
+
+calibration/output/undistort_preview/*
+!calibration/output/undistort_preview/.gitkeep
+
+calibration/output/pose_estimation/*_debug.png
+
+############################################
 # IDE
 ############################################
 

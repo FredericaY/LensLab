@@ -6,7 +6,7 @@ namespace LensLab.Runtime
     {
         [Header("Pose Source")]
         [SerializeField] private TextAsset poseJson;
-        [SerializeField] private string resourcesPath = "LensLab/pose_003";
+        [SerializeField] private string resourcesPath = "LensLab/lenslab_pose";
         [SerializeField] private bool loadFromResourcesIfMissing = true;
 
         [Header("Behavior")]

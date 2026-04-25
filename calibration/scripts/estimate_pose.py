@@ -299,8 +299,10 @@ def main() -> None:
     print(f"Calibration: {calibration_path}")
     print(f"Markers detected: {marker_count}")
     print(f"ChArUco corners detected: {charuco_corner_count}")
-    print(f"Pose translation (board -> camera): tx={float(tvec[0]):.6f}, ty={float(tvec[1]):.6f}, tz={float(tvec[2]):.6f}")
-    print(f"Pose rotation vector: rx={float(rvec[0]):.6f}, ry={float(rvec[1]):.6f}, rz={float(rvec[2]):.6f}")
+    tvec_values = tvec.reshape(-1)
+    rvec_values = rvec.reshape(-1)
+    print(f"Pose translation (board -> camera): tx={float(tvec_values[0]):.6f}, ty={float(tvec_values[1]):.6f}, tz={float(tvec_values[2]):.6f}")
+    print(f"Pose rotation vector: rx={float(rvec_values[0]):.6f}, ry={float(rvec_values[1]):.6f}, rz={float(rvec_values[2]):.6f}")
     print(f"Reprojection: mean={reprojection_summary['mean_error_px']:.6f}px, max={reprojection_summary['max_error_px']:.6f}px")
     print(f"Wrote pose JSON: {pose_json_path}")
     if debug_path is not None:

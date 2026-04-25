@@ -1,0 +1,146 @@
+{
+  "schema_version": "1.1",
+  "camera_name": "default_camera",
+  "source_image": "calibration\\output\\live_capture\\live_000.png",
+  "image_width": 1920,
+  "image_height": 1080,
+  "pose_estimation": {
+    "success": true,
+    "method": "charuco_solvepnp",
+    "marker_count": 16,
+    "charuco_corner_count": 20,
+    "rvec": [
+      -0.1422187147143602,
+      -0.0999585333670653,
+      -0.03308576324681257
+    ],
+    "tvec": [
+      -0.07560158355276478,
+      -0.02468346969039172,
+      0.4267979697275458
+    ],
+    "rotation_matrix": [
+      [
+        0.994471261124408,
+        0.04000282582644471,
+        -0.09709111557464312
+      ],
+      [
+        -0.025823907843738142,
+        0.9893673727655186,
+        0.14312696283626505
+      ],
+      [
+        0.10178426490036513,
+        -0.13982837921164146,
+        0.9849304481970986
+      ]
+    ],
+    "camera_position_in_board_space": [
+      0.031104860882485368,
+      0.08712376489520676,
+      -0.42417368765066416
+    ],
+    "reprojection": {
+      "point_count": 20,
+      "mean_error_px": 0.38800472021102905,
+      "max_error_px": 0.8742566108703613
+    }
+  },
+  "board_model": {
+    "preferred_surface": "outer_board",
+    "outer_board_corners_3d": [
+      {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      {
+        "x": 0.17499999701976776,
+        "y": 0.0,
+        "z": 0.0
+      },
+      {
+        "x": 0.17499999701976776,
+        "y": 0.125,
+        "z": 0.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.125,
+        "z": 0.0
+      }
+    ],
+    "outer_board_corners_image": [
+      {
+        "x": 583.3139038085938,
+        "y": 330.8470153808594
+      },
+      {
+        "x": 1430.1749267578125,
+        "y": 314.26165771484375
+      },
+      {
+        "x": 1481.4669189453125,
+        "y": 927.6047973632812
+      },
+      {
+        "x": 590.2072143554688,
+        "y": 968.841796875
+      }
+    ],
+    "charuco_inner_corners_3d": [
+      {
+        "x": 0.02500000037252903,
+        "y": 0.02500000037252903,
+        "z": 0.0
+      },
+      {
+        "x": 0.15000000596046448,
+        "y": 0.02500000037252903,
+        "z": 0.0
+      },
+      {
+        "x": 0.15000000596046448,
+        "y": 0.10000000149011612,
+        "z": 0.0
+      },
+      {
+        "x": 0.02500000037252903,
+        "y": 0.10000000149011612,
+        "z": 0.0
+      }
+    ],
+    "charuco_inner_corners_image": [
+      {
+        "x": 713.2439575195312,
+        "y": 450.7832336425781
+      },
+      {
+        "x": 1320.262451171875,
+        "y": 435.15106201171875
+      },
+      {
+        "x": 1344.206298828125,
+        "y": 800.4896240234375
+      },
+      {
+        "x": 721.2618408203125,
+        "y": 828.1694946289062
+      }
+    ]
+  },
+  "calibration_target": {
+    "type": "charuco",
+    "squares_x": 7,
+    "squares_y": 5,
+    "square_size_m": 0.025,
+    "marker_size_m": 0.018,
+    "aruco_dictionary": "DICT_4X4_50"
+  },
+  "notes": {
+    "coordinate_convention": "opencv_camera",
+    "board_space_definition": "Board geometry exported directly from OpenCV CharucoBoard definitions.",
+    "generated_by": "LensLab pose estimation pipeline"
+  }
+}

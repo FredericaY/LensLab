@@ -2,7 +2,7 @@
 distortion_model: opencv_rational
 
 input:
-  image_dir: data/calibration_images
+  image_dir: data/offline_calibration_images
   image_glob: "*.png"
 
 output:

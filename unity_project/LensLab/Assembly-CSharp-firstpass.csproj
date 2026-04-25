@@ -45,20 +45,19 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Data\Tools\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabProjectionAlignmentGizmo.cs" />
+    <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabWebCamSource.cs" />
     <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabPoseData.cs" />
     <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabCalibrationData.cs" />
-    <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabUndistortionPreviewUI.cs" />
     <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabProjectionValidationOverlay.cs" />
     <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabCameraProjectionController.cs" />
     <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabPoseLoader.cs" />
     <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabPoseBoardDebug.cs" />
     <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabCalibrationLoader.cs" />
+    <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabLiveCameraBackground.cs" />
     <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabUndistortionController.cs" />
-    <Compile Include="Assets\Plugins\LensLab\Runtime\LensLabPoseVisualizer.cs" />
-    <None Include="Assets\Plugins\LensLab\Shaders\LensLabUndistortion.compute" />
-    <None Include="Assets\Plugins\LensLab\Resources\LensLab\pose_003.json" />
     <None Include="Assets\Plugins\LensLab\Resources\LensLab\lenslab_calibration.json" />
+    <None Include="Assets\Plugins\LensLab\Shaders\LensLabUndistortion.compute" />
+    <None Include="Assets\Plugins\LensLab\Resources\LensLab\lenslab_pose.json" />
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
     </Reference>

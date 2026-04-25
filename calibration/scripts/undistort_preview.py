@@ -67,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--unity-reference-name",
         type=str,
-        default="cpu_reference",
+        default="undistorted_reference",
         help="Base file name for the Unity CPU reference export, without extension.",
     )
     return parser.parse_args()

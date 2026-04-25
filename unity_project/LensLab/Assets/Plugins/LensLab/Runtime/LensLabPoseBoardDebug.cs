@@ -11,7 +11,6 @@ namespace LensLab.Runtime
         [SerializeField] private Camera targetCamera;
 
         [Header("Board Debug")]
-        [SerializeField] private bool suppressLegacyProjectionGuides = true;
         [SerializeField] private bool createOnEnable = true;
         [SerializeField] private bool rebuildEveryFrame = true;
         [SerializeField] private bool verboseLogging = true;
@@ -20,6 +19,7 @@ namespace LensLab.Runtime
         [SerializeField] private float renderDistanceOffset = 0.01f;
 
         private const string RuntimeRootName = "LensLabPoseBoardDebug_Runtime";
+        private const HideFlags RuntimeHideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
 
         private Transform runtimeRoot;
         private MeshRenderer boardRenderer;
@@ -60,7 +60,7 @@ namespace LensLab.Runtime
                 return;
             }
 
-            SuppressLegacyProjectionGuides();
+            HideValidationGuideOverlay();
             EnsureRuntimeObjects();
             UpdateBoardGeometry(poseData, imageCorners);
 
@@ -147,7 +147,7 @@ namespace LensLab.Runtime
             {
                 Debug.LogError(
                     $"[{nameof(LensLabPoseBoardDebug)}] Preferred board image corners are not available in pose JSON. " +
-                    "Re-run estimate_pose.py so pose_003.json contains board_model data.",
+                    "Re-run estimate_pose.py so the pose JSON contains board_model data.",
                     this
                 );
                 return false;
@@ -156,19 +156,8 @@ namespace LensLab.Runtime
             return true;
         }
 
-        private void SuppressLegacyProjectionGuides()
+        private void HideValidationGuideOverlay()
         {
-            if (!suppressLegacyProjectionGuides)
-            {
-                return;
-            }
-
-            var gizmo = GetComponent<LensLabProjectionAlignmentGizmo>();
-            if (gizmo != null && gizmo.enabled)
-            {
-                gizmo.enabled = false;
-            }
-
             if (validationOverlay != null)
             {
                 var type = validationOverlay.GetType();
@@ -193,6 +182,7 @@ namespace LensLab.Runtime
             }
 
             var rootObject = new GameObject(RuntimeRootName);
+            rootObject.hideFlags = RuntimeHideFlags;
             rootObject.transform.SetParent(targetCamera != null ? targetCamera.transform : transform, false);
             rootObject.transform.localPosition = Vector3.zero;
             rootObject.transform.localRotation = Quaternion.identity;
@@ -200,16 +190,19 @@ namespace LensLab.Runtime
             runtimeRoot = rootObject.transform;
 
             var boardObject = new GameObject("BoardFill", typeof(MeshFilter), typeof(MeshRenderer));
+            boardObject.hideFlags = RuntimeHideFlags;
             boardObject.transform.SetParent(runtimeRoot, false);
             boardMeshFilter = boardObject.GetComponent<MeshFilter>();
             boardRenderer = boardObject.GetComponent<MeshRenderer>();
             boardMaterial = new Material(Shader.Find("Unlit/Color"));
+            boardMaterial.hideFlags = RuntimeHideFlags;
             boardRenderer.sharedMaterial = boardMaterial;
             boardRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             boardRenderer.receiveShadows = false;
             boardRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
             boardRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
             boardMesh = new Mesh { name = "LensLabPoseBoardProjectedMesh" };
+            boardMesh.hideFlags = RuntimeHideFlags;
             boardMeshFilter.sharedMesh = boardMesh;
         }
 

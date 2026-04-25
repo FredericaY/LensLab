@@ -20,11 +20,15 @@ namespace LensLab.Runtime
 
         [Header("Behavior")]
         [SerializeField] private bool runOnStart = true;
+        [SerializeField] private bool runEveryFrame = false;
         [SerializeField] private bool verboseLogging = true;
 
         private const string KernelName = "CSMain";
         private RenderTexture outputTexture;
         private int kernelIndex = -1;
+        private Texture lastLoggedInputTexture;
+        private Vector2Int lastLoggedSize;
+        private float lastLoggedAlpha = -1f;
 
         public RenderTexture OutputTexture => outputTexture;
         public Texture InputTexture => inputTexture;
@@ -42,6 +46,14 @@ namespace LensLab.Runtime
         private void Start()
         {
             if (runOnStart)
+            {
+                RunUndistortion();
+            }
+        }
+
+        private void LateUpdate()
+        {
+            if (runEveryFrame)
             {
                 RunUndistortion();
             }
@@ -96,9 +108,30 @@ namespace LensLab.Runtime
 
             BindPreviewTargets();
 
-            if (verboseLogging)
+            if (ShouldLogDispatch(width, height))
             {
                 Debug.Log(BuildDebugSummary(width, height, scaledFx, scaledFy, scaledCx, scaledCy), this);
+                lastLoggedInputTexture = inputTexture;
+                lastLoggedSize = new Vector2Int(width, height);
+                lastLoggedAlpha = outputAlpha;
+            }
+        }
+
+        public void SetInputTexture(Texture texture, bool runNow = true)
+        {
+            if (inputTexture == texture)
+            {
+                if (runNow)
+                {
+                    RunUndistortion();
+                }
+                return;
+            }
+
+            inputTexture = texture;
+            if (runNow)
+            {
+                RunUndistortion();
             }
         }
 
@@ -182,6 +215,7 @@ namespace LensLab.Runtime
             outputTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
             {
                 name = "LensLabUndistortedOutput",
+                hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
                 enableRandomWrite = true,
                 filterMode = FilterMode.Bilinear,
                 wrapMode = TextureWrapMode.Clamp,
@@ -218,6 +252,19 @@ namespace LensLab.Runtime
                 $"Calibration Size: {calibration.image_width}x{calibration.image_height}\n" +
                 $"Scaled Intrinsics: fx={fx:F3}, fy={fy:F3}, cx={cx:F3}, cy={cy:F3}\n" +
                 $"Output Alpha: {outputAlpha:F2}";
+        }
+
+        private bool ShouldLogDispatch(int width, int height)
+        {
+            if (!verboseLogging)
+            {
+                return false;
+            }
+
+            return inputTexture != lastLoggedInputTexture
+                || lastLoggedSize.x != width
+                || lastLoggedSize.y != height
+                || !Mathf.Approximately(lastLoggedAlpha, outputAlpha);
         }
 
         private void OnDestroy()

@@ -1,24 +1,25 @@
 {
   "schema_version": "1.0",
   "camera_name": "default_camera",
-  "image_width": 5712,
-  "image_height": 4284,
+  "source_mode": "live_webcam",
+  "image_width": 1920,
+  "image_height": 1080,
   "intrinsics": {
-    "fx": 4115.306101530174,
-    "fy": 4115.3872616456065,
-    "cx": 2863.5214738529817,
-    "cy": 2168.2994895844377
+    "fx": 2104.7586358198823,
+    "fy": 2097.0085975671936,
+    "cx": 960.6596971772271,
+    "cy": 453.90182039086164
   },
   "distortion_model": "opencv_rational",
   "distortion_coeffs": {
-    "k1": -0.5813625264320209,
-    "k2": 21.037573246801742,
-    "p1": 0.0004763451503308046,
-    "p2": -5.014671768082666e-05,
-    "k3": 3.0871514407907443,
-    "k4": -0.6995147927296744,
-    "k5": 20.66320938566261,
-    "k6": 4.621350943153288
+    "k1": -0.812486041016396,
+    "k2": -4.472590617487805,
+    "p1": -0.0060217989833793095,
+    "p2": -0.0055179010856991175,
+    "k3": 22.989900768311763,
+    "k4": -1.2143093031309413,
+    "k5": 2.0448421482522496,
+    "k6": -23.44505562105307
   },
   "calibration_target": {
     "type": "charuco",
@@ -29,233 +30,728 @@
     "aruco_dictionary": "DICT_4X4_50"
   },
   "reprojection_error": {
-    "mean": 0.5460298604435391,
-    "rms": 1.2665422059341342
+    "mean": 0.41449542849312,
+    "rms": 0.5532990576719341
   },
   "detection_summary": {
+    "source_mode": "live_webcam",
     "board_type": "charuco",
     "aruco_dictionary": "DICT_4X4_50",
-    "detected_image_count": 15,
+    "detected_image_count": 44,
     "failed_image_count": 0,
     "min_required_images": 12,
     "ready_for_calibration": true,
     "images": [
       {
-        "image_path": "data\\calibration_images\\003.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 0,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_000.png"
       },
       {
-        "image_path": "data\\calibration_images\\011.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 1,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_001.png"
       },
       {
-        "image_path": "data\\calibration_images\\012.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 2,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_002.png"
       },
       {
-        "image_path": "data\\calibration_images\\013.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 14,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 3,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_003.png"
       },
       {
-        "image_path": "data\\calibration_images\\014.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 4,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_004.png"
       },
       {
-        "image_path": "data\\calibration_images\\015.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 5,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_005.png"
       },
       {
-        "image_path": "data\\calibration_images\\016.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 6,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_006.png"
       },
       {
-        "image_path": "data\\calibration_images\\017.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 7,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_007.png"
       },
       {
-        "image_path": "data\\calibration_images\\018.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 8,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_008.png"
       },
       {
-        "image_path": "data\\calibration_images\\019.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 9,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_009.png"
       },
       {
-        "image_path": "data\\calibration_images\\020.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 22,
+        "used_for_calibration": true,
+        "sample_index": 10,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_010.png"
       },
       {
-        "image_path": "data\\calibration_images\\026.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 11,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_011.png"
       },
       {
-        "image_path": "data\\calibration_images\\027.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 12,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_012.png"
       },
       {
-        "image_path": "data\\calibration_images\\028.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
-        "marker_count": 17,
-        "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 14,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 13,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_013.png"
       },
       {
-        "image_path": "data\\calibration_images\\029.png",
         "status": "charuco_detected",
-        "image_width": 5712,
-        "image_height": 4284,
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 14,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_014.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 14,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 15,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_015.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 16,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_016.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 17,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_017.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
         "marker_count": 17,
         "charuco_corner_count": 24,
-        "used_for_calibration": true
+        "used_for_calibration": true,
+        "sample_index": 18,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_018.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 22,
+        "used_for_calibration": true,
+        "sample_index": 19,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_019.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true,
+        "sample_index": 20,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_020.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true,
+        "sample_index": 21,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_021.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true,
+        "sample_index": 22,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_022.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true,
+        "sample_index": 23,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_023.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 19,
+        "used_for_calibration": true,
+        "sample_index": 24,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_024.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 22,
+        "used_for_calibration": true,
+        "sample_index": 25,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_025.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 19,
+        "used_for_calibration": true,
+        "sample_index": 26,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_026.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 27,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_027.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 28,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_028.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 29,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_029.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 30,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_030.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 31,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_031.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 32,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_032.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 22,
+        "used_for_calibration": true,
+        "sample_index": 33,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_033.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 34,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_034.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 22,
+        "used_for_calibration": true,
+        "sample_index": 35,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_035.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 22,
+        "used_for_calibration": true,
+        "sample_index": 36,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_036.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 37,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_037.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 22,
+        "used_for_calibration": true,
+        "sample_index": 38,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_038.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 17,
+        "charuco_corner_count": 24,
+        "used_for_calibration": true,
+        "sample_index": 39,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_039.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 40,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_040.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 18,
+        "used_for_calibration": true,
+        "sample_index": 41,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_041.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 15,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 42,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_042.png"
+      },
+      {
+        "status": "charuco_detected",
+        "image_width": 1920,
+        "image_height": 1080,
+        "marker_count": 16,
+        "charuco_corner_count": 20,
+        "used_for_calibration": true,
+        "sample_index": 43,
+        "source": "webcam",
+        "image_path": "calibration\\output\\live_capture\\live_043.png"
       }
     ]
   },
   "calibration_summary": {
     "success": true,
     "reason": null,
-    "used_image_count": 15,
+    "used_image_count": 44,
     "per_view_errors": [
       {
         "view_index": 0,
-        "point_count": 24,
-        "mean_error": 0.34375643730163574
+        "point_count": 20,
+        "mean_error": 0.38800472021102905
       },
       {
         "view_index": 1,
-        "point_count": 24,
-        "mean_error": 0.24080942571163177
+        "point_count": 18,
+        "mean_error": 0.3337917625904083
       },
       {
         "view_index": 2,
-        "point_count": 24,
-        "mean_error": 0.5143195986747742
+        "point_count": 20,
+        "mean_error": 0.7447023391723633
       },
       {
         "view_index": 3,
-        "point_count": 24,
-        "mean_error": 1.7631282806396484
+        "point_count": 18,
+        "mean_error": 0.2899836599826813
       },
       {
         "view_index": 4,
-        "point_count": 24,
-        "mean_error": 0.23524267971515656
+        "point_count": 18,
+        "mean_error": 0.45810726284980774
       },
       {
         "view_index": 5,
-        "point_count": 24,
-        "mean_error": 0.3630079925060272
+        "point_count": 18,
+        "mean_error": 0.4482709467411041
       },
       {
         "view_index": 6,
-        "point_count": 24,
-        "mean_error": 0.8148984909057617
+        "point_count": 20,
+        "mean_error": 0.5717476010322571
       },
       {
         "view_index": 7,
-        "point_count": 24,
-        "mean_error": 0.3531884253025055
+        "point_count": 18,
+        "mean_error": 0.31204769015312195
       },
       {
         "view_index": 8,
-        "point_count": 24,
-        "mean_error": 0.3807872235774994
+        "point_count": 18,
+        "mean_error": 0.5566543936729431
       },
       {
         "view_index": 9,
-        "point_count": 24,
-        "mean_error": 0.25626346468925476
+        "point_count": 20,
+        "mean_error": 0.606852114200592
       },
       {
         "view_index": 10,
-        "point_count": 24,
-        "mean_error": 0.363757461309433
+        "point_count": 22,
+        "mean_error": 0.6683231592178345
       },
       {
         "view_index": 11,
-        "point_count": 24,
-        "mean_error": 0.3347052037715912
+        "point_count": 20,
+        "mean_error": 0.43381237983703613
       },
       {
         "view_index": 12,
-        "point_count": 24,
-        "mean_error": 0.2793252766132355
+        "point_count": 18,
+        "mean_error": 0.9631263017654419
       },
       {
         "view_index": 13,
-        "point_count": 24,
-        "mean_error": 0.6187828779220581
+        "point_count": 18,
+        "mean_error": 0.5108798146247864
       },
       {
         "view_index": 14,
+        "point_count": 18,
+        "mean_error": 0.47565412521362305
+      },
+      {
+        "view_index": 15,
+        "point_count": 18,
+        "mean_error": 0.4860703647136688
+      },
+      {
+        "view_index": 16,
+        "point_count": 20,
+        "mean_error": 0.5617709755897522
+      },
+      {
+        "view_index": 17,
+        "point_count": 18,
+        "mean_error": 0.42193713784217834
+      },
+      {
+        "view_index": 18,
         "point_count": 24,
-        "mean_error": 1.3284751176834106
+        "mean_error": 0.787750244140625
+      },
+      {
+        "view_index": 19,
+        "point_count": 22,
+        "mean_error": 0.23585210740566254
+      },
+      {
+        "view_index": 20,
+        "point_count": 24,
+        "mean_error": 0.4800727665424347
+      },
+      {
+        "view_index": 21,
+        "point_count": 24,
+        "mean_error": 0.36482706665992737
+      },
+      {
+        "view_index": 22,
+        "point_count": 24,
+        "mean_error": 0.168317511677742
+      },
+      {
+        "view_index": 23,
+        "point_count": 24,
+        "mean_error": 0.29978635907173157
+      },
+      {
+        "view_index": 24,
+        "point_count": 19,
+        "mean_error": 0.26573312282562256
+      },
+      {
+        "view_index": 25,
+        "point_count": 22,
+        "mean_error": 0.1871134340763092
+      },
+      {
+        "view_index": 26,
+        "point_count": 19,
+        "mean_error": 0.23037606477737427
+      },
+      {
+        "view_index": 27,
+        "point_count": 18,
+        "mean_error": 0.18674609065055847
+      },
+      {
+        "view_index": 28,
+        "point_count": 20,
+        "mean_error": 0.336292564868927
+      },
+      {
+        "view_index": 29,
+        "point_count": 20,
+        "mean_error": 0.2066124975681305
+      },
+      {
+        "view_index": 30,
+        "point_count": 18,
+        "mean_error": 0.17774806916713715
+      },
+      {
+        "view_index": 31,
+        "point_count": 20,
+        "mean_error": 0.5100060105323792
+      },
+      {
+        "view_index": 32,
+        "point_count": 18,
+        "mean_error": 0.20516346395015717
+      },
+      {
+        "view_index": 33,
+        "point_count": 22,
+        "mean_error": 0.2500939667224884
+      },
+      {
+        "view_index": 34,
+        "point_count": 20,
+        "mean_error": 0.26301831007003784
+      },
+      {
+        "view_index": 35,
+        "point_count": 22,
+        "mean_error": 0.36866873502731323
+      },
+      {
+        "view_index": 36,
+        "point_count": 22,
+        "mean_error": 0.2813263535499573
+      },
+      {
+        "view_index": 37,
+        "point_count": 20,
+        "mean_error": 0.23823630809783936
+      },
+      {
+        "view_index": 38,
+        "point_count": 22,
+        "mean_error": 0.5692514777183533
+      },
+      {
+        "view_index": 39,
+        "point_count": 24,
+        "mean_error": 0.5227193236351013
+      },
+      {
+        "view_index": 40,
+        "point_count": 18,
+        "mean_error": 0.1889796257019043
+      },
+      {
+        "view_index": 41,
+        "point_count": 18,
+        "mean_error": 0.8943279981613159
+      },
+      {
+        "view_index": 42,
+        "point_count": 20,
+        "mean_error": 0.25755903124809265
+      },
+      {
+        "view_index": 43,
+        "point_count": 20,
+        "mean_error": 0.5473793745040894
       }
     ]
   },
@@ -263,7 +759,7 @@
     "coordinate_convention": "opencv_camera",
     "generated_by": "LensLab calibration pipeline",
     "status": "calibration_complete",
-    "image_count": 15,
-    "todo": "Add undistortion preview export and optional debug overlays."
+    "image_count": 44,
+    "todo": "Use the same resolution for runtime capture, undistortion, and Unity projection."
   }
 }
