@@ -42,7 +42,7 @@ namespace LensLab.Runtime
             "'conda run --no-capture-output -n <name> python ...'\n" +
             "This is the recommended setting when packages are installed in a conda env."
         )]
-        [SerializeField] private string condaEnvironmentName = "";
+        [SerializeField] private string condaEnvironmentName = "lenslab";
 
         [Tooltip(
             "Python executable used when Conda Environment Name is empty.\n" +
