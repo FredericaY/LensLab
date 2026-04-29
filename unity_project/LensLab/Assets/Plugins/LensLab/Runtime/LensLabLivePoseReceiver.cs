@@ -43,6 +43,9 @@ namespace LensLab.Runtime
         [Tooltip("The Transform to drive. Defaults to this GameObject's own Transform.")]
         [SerializeField] private Transform poseTarget;
 
+        [Tooltip("Camera whose local space receives the OpenCV pose. Defaults to Camera.main.")]
+        [SerializeField] private Camera targetCamera;
+
         [Header("Board Anchor")]
         [Tooltip(
             "Offset from the board's (0,0) corner to the desired anchor point, " +
@@ -140,9 +143,16 @@ namespace LensLab.Runtime
 
         private void ApplyPose(LensLabLivePoseData pose)
         {
-            // Anchor position: board-local offset transformed into Unity camera space.
-            var targetPosition = pose.BoardLocalToUnityCamera(boardLocalOffset);
-            var targetRotation = pose.UnityRotation;
+            // The pose is expressed in Unity camera space, so convert it through
+            // the actual scene camera before writing a world-space Transform.
+            var cameraSpacePosition = pose.BoardLocalToUnityCamera(boardLocalOffset);
+            var cameraSpaceRotation = pose.UnityRotation;
+            var targetPosition = targetCamera != null
+                ? targetCamera.transform.TransformPoint(cameraSpacePosition)
+                : cameraSpacePosition;
+            var targetRotation = targetCamera != null
+                ? targetCamera.transform.rotation * cameraSpaceRotation
+                : cameraSpaceRotation;
 
             if (!_hasFirstPose)
             {
@@ -207,6 +217,11 @@ namespace LensLab.Runtime
             if (poseClient == null)
             {
                 poseClient = FindObjectOfType<LensLabPoseClient>(true);
+            }
+
+            if (targetCamera == null)
+            {
+                targetCamera = Camera.main;
             }
         }
     }

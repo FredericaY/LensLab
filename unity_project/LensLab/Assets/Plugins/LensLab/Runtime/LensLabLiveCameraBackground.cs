@@ -14,7 +14,7 @@ namespace LensLab.Runtime
         [SerializeField] private bool useGpuUndistortion = false;
         [SerializeField] private bool runUndistortionEveryCameraFrame = true;
         [SerializeField] private bool copyRawCameraToRenderTexture = true;
-        [SerializeField] private bool useCanvasBackgroundForRawLiveTest = true;
+        [SerializeField] private bool useCanvasBackgroundForRawLiveTest = false;
 
         [Header("Scene Cleanup")]
         [SerializeField] private bool disableStaticPoseDebugForRawLiveTest = true;

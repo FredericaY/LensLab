@@ -147,6 +147,10 @@ namespace LensLab.Editor
                 root = CreateGO(rootName);
             }
 
+            root.transform.position = new Vector3(0f, 0f, -8f);
+            root.transform.rotation = Quaternion.identity;
+            root.transform.localScale = Vector3.one;
+
             // ----- BoardOutline -----
             var outline = FindOrCreateChild(root, "BoardOutline", () =>
             {
@@ -327,9 +331,11 @@ namespace LensLab.Editor
             SetProperty(liveBackground, "webCamSource",      webCamSource);
             SetProperty(liveBackground, "validationOverlay", valOverlay);
             SetProperty(liveBackground, "calibrationLoader", calibLoader);
+            SetBoolProperty(liveBackground, "useCanvasBackgroundForRawLiveTest", false);
 
             // LensLabLivePoseReceiver
             SetProperty(poseReceiver, "poseTarget",      arContent.transform);
+            SetProperty(poseReceiver, "targetCamera",    camComp);
             SetBoolProperty(poseReceiver, "matchBoardScale", false);
 
             // LensLabStatusHUD — auto-find is fine but wire explicitly for robustness
