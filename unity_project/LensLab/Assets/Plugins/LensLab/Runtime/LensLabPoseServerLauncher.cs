@@ -35,8 +35,20 @@ namespace LensLab.Runtime
         [Tooltip("Automatically start the server when entering Play mode.")]
         [SerializeField] private bool launchOnPlay = true;
 
-        [Header("Python")]
-        [Tooltip("Python executable name or full path. 'python' or 'python3'.")]
+        [Header("Python / Conda")]
+        [Tooltip(
+            "Leave empty to call Python directly (uses Python Executable below).\n" +
+            "Set to your conda environment name (e.g. 'lenslab') to launch via\n" +
+            "'conda run --no-capture-output -n <name> python ...'\n" +
+            "This is the recommended setting when packages are installed in a conda env."
+        )]
+        [SerializeField] private string condaEnvironmentName = "";
+
+        [Tooltip(
+            "Python executable used when Conda Environment Name is empty.\n" +
+            "Use 'python', 'python3', or a full path such as\n" +
+            "C:/Users/you/miniconda3/envs/lenslab/python.exe"
+        )]
         [SerializeField] private string pythonExecutable = "python";
 
         [Header("Server Arguments")]
@@ -114,13 +126,13 @@ namespace LensLab.Runtime
                 return;
             }
 
-            var arguments = BuildArguments(scriptPath);
+            var (executable, arguments) = BuildCommand(scriptPath);
 
             try
             {
                 var startInfo = new ProcessStartInfo
                 {
-                    FileName = pythonExecutable,
+                    FileName = executable,
                     Arguments = arguments,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -148,9 +160,12 @@ namespace LensLab.Runtime
             }
             catch (Exception ex)
             {
+                var hint = string.IsNullOrEmpty(condaEnvironmentName.Trim())
+                    ? $"Make sure '{pythonExecutable}' is on your PATH."
+                    : $"Make sure 'conda' is on your PATH and the environment '{condaEnvironmentName.Trim()}' exists.";
                 UnityEngine.Debug.LogError(
                     $"[{nameof(LensLabPoseServerLauncher)}] Failed to start pose server: {ex.Message}\n" +
-                    $"Make sure '{pythonExecutable}' is on your PATH and the script exists at:\n{scriptPath}",
+                    $"{hint}\nScript path: {scriptPath}",
                     this
                 );
                 _process = null;
@@ -251,14 +266,31 @@ namespace LensLab.Runtime
             return resolved;
         }
 
-        private string BuildArguments(string scriptPath)
+        /// <summary>
+        /// Returns (executableFileName, arguments) for the process.
+        /// When a conda environment is specified the command becomes:
+        ///   conda run --no-capture-output -n &lt;env&gt; python "&lt;script&gt;" [args]
+        /// Otherwise:
+        ///   &lt;pythonExecutable&gt; "&lt;script&gt;" [args]
+        /// </summary>
+        private (string executable, string arguments) BuildCommand(string scriptPath)
         {
-            var args = $"\"{scriptPath}\" --port {port} --min-corners {minCorners}";
+            var serverArgs = $"--port {port} --min-corners {minCorners}";
             if (!verboseServer)
             {
-                args += " --no-verbose";
+                serverArgs += " --no-verbose";
             }
-            return args;
+
+            var envName = condaEnvironmentName.Trim();
+            if (!string.IsNullOrEmpty(envName))
+            {
+                // conda run --no-capture-output ensures stdout/stderr are streamed
+                // in real time rather than buffered until the process exits.
+                var arguments = $"run --no-capture-output -n \"{envName}\" python \"{scriptPath}\" {serverArgs}";
+                return ("conda", arguments);
+            }
+
+            return (pythonExecutable, $"\"{scriptPath}\" {serverArgs}");
         }
 
         // ------------------------------------------------------------------
