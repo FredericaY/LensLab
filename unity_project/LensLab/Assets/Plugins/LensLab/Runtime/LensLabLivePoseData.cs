@@ -56,6 +56,35 @@ namespace LensLab.Runtime
                 ? rotation_matrix_flat[row * 3 + col]
                 : (row == col ? 1f : 0f);
 
+        /// <summary>
+        /// Transforms a point in board local space (OpenCV convention, metres) into
+        /// Unity camera space. Use this to anchor virtual content at any board-relative
+        /// position, such as the board centre.
+        ///
+        /// Board local convention (OpenCV): X right, Y down, Z out of board surface.
+        /// Board centre for a 7×5 board at 0.025 m/square: (0.0875, 0.0625, 0).
+        /// </summary>
+        public Vector3 BoardLocalToUnityCamera(Vector3 boardLocalPoint)
+        {
+            if (!IsValid)
+            {
+                return Vector3.zero;
+            }
+
+            var m = rotation_matrix_flat;
+            var ox = boardLocalPoint.x;
+            var oy = boardLocalPoint.y;
+            var oz = boardLocalPoint.z;
+
+            // p_cam_opencv = R * p_board + t
+            var cx = m[0] * ox + m[1] * oy + m[2] * oz + tvec[0];
+            var cy = m[3] * ox + m[4] * oy + m[5] * oz + tvec[1];
+            var cz = m[6] * ox + m[7] * oy + m[8] * oz + tvec[2];
+
+            // Flip Y: OpenCV Y-down → Unity Y-up
+            return new Vector3(cx, -cy, cz);
+        }
+
         // ------------------------------------------------------------------
         // OpenCV → Unity coordinate conversion
         // ------------------------------------------------------------------
