@@ -1,0 +1,18 @@
+{
+    "name": "LensLab.Editor",
+    "rootNamespace": "LensLab.Editor",
+    "references": [
+        "GUID:3f8a2e1b4c7d9f06a5b2e8c1d4f70a3e"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
