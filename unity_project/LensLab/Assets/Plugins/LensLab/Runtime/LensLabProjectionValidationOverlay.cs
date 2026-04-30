@@ -205,7 +205,7 @@ namespace LensLab.Runtime
                 backgroundTexture = Resources.Load<Texture>(backgroundResourcesPath);
             }
 
-            if (backgroundTexture == null)
+            if (backgroundTexture == null && loadBackgroundFromResourcesIfMissing)
             {
                 Debug.LogWarning(
                     $"[{nameof(LensLabProjectionValidationOverlay)}] No background texture found. " +

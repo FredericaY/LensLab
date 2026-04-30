@@ -19,7 +19,8 @@ namespace LensLab.Editor
     /// <code>
     /// LensLabBootstrap          — CalibrationLoader, PoseLoader, PoseServerLauncher
     /// Main Camera               — Camera, CameraProjectionController, ProjectionValidationOverlay
-    /// LensLabLiveCamera         — WebCamSource, LiveCameraBackground, PoseClient, LivePoseReceiver
+    /// LensLabLiveCamera         — PoseClient, LiveCameraBackground, LivePoseReceiver
+    ///                              (Python owns the webcam in publisher mode; no WebCamSource needed)
     /// LensLabARContent          — LivePoseReceiver target; matchBoardScale = false
     ///   BoardOutline            — Quad, Sprites/Default semi-transparent cyan
     ///   PoseAxes                — empty parent
@@ -60,11 +61,14 @@ namespace LensLab.Editor
             EditorGUIUtility.PingObject(bootstrap);
 
             Debug.Log(
-                "[LensLab] Live AR scene created.\n" +
-                "Press Play to start. The Python pose server will launch automatically " +
-                "if LensLabPoseServerLauncher is configured correctly.\n" +
-                "Adjust LensLabLivePoseReceiver → Board Local Offset / Board Size Meters " +
-                "to match your ChArUco board dimensions."
+                "[LensLab] Live AR scene created (TCP publisher mode).\n" +
+                "Press Play. Sequence:\n" +
+                "  1. LensLabPoseServerLauncher spawns pose_server.py via conda.\n" +
+                "  2. Python opens the webcam (MJPG) and listens on TCP 127.0.0.1:5555.\n" +
+                "  3. LensLabPoseClient connects, receives (jpeg, pose) at ~30 fps.\n" +
+                "  4. Frames are bound to the projection-validation overlay; pose drives LensLabARContent.\n" +
+                "Stopping Play kills the Python process automatically.\n" +
+                "Tune LensLabPoseServerLauncher → Conda Environment Name if Python isn't on PATH."
             );
         }
 
@@ -122,9 +126,11 @@ namespace LensLab.Editor
             const string name = "LensLabLiveCamera";
             var go = GameObject.Find(name) ?? CreateGO(name);
 
-            EnsureComponent<LensLabWebCamSource>(go);
-            EnsureComponent<LensLabLiveCameraBackground>(go);
+            // Publisher-mode setup: PoseClient receives both frames and pose
+            // from Python. We deliberately do NOT add LensLabWebCamSource here;
+            // having Unity also open the webcam would conflict with Python.
             EnsureComponent<LensLabPoseClient>(go);
+            EnsureComponent<LensLabLiveCameraBackground>(go);
             EnsureComponent<LensLabLivePoseReceiver>(go);
             return go;
         }
@@ -314,7 +320,6 @@ namespace LensLab.Editor
             var camComp        = mainCamera.GetComponent<Camera>();
             var projCtrl       = mainCamera.GetComponent<LensLabCameraProjectionController>();
             var valOverlay     = mainCamera.GetComponent<LensLabProjectionValidationOverlay>();
-            var webCamSource   = liveCamera.GetComponent<LensLabWebCamSource>();
             var liveBackground = liveCamera.GetComponent<LensLabLiveCameraBackground>();
             var poseClient     = liveCamera.GetComponent<LensLabPoseClient>();
             var poseReceiver   = liveCamera.GetComponent<LensLabLivePoseReceiver>();
@@ -326,12 +331,21 @@ namespace LensLab.Editor
             // LensLabProjectionValidationOverlay
             SetProperty(valOverlay,    "calibrationLoader", calibLoader);
             SetProperty(valOverlay,    "targetCamera",      camComp);
+            // The pose_reference texture was a calibration sanity-check image. In live
+            // mode the background is supplied by the pose server; clear the static
+            // fallback so the overlay doesn't display the old reference if frames
+            // haven't arrived yet.
+            SetProperty(valOverlay,    "backgroundTexture", null);
+            SetBoolProperty(valOverlay, "loadBackgroundFromResourcesIfMissing", false);
 
             // LensLabLiveCameraBackground
-            SetProperty(liveBackground, "webCamSource",      webCamSource);
+            SetProperty(liveBackground, "poseClient",        poseClient);
             SetProperty(liveBackground, "validationOverlay", valOverlay);
             SetProperty(liveBackground, "calibrationLoader", calibLoader);
             SetBoolProperty(liveBackground, "useCanvasBackgroundForRawLiveTest", false);
+            // GPU undistortion needs a separate controller; for the basic AR demo we
+            // display the raw frame and let Python work in distorted pixel space too.
+            SetBoolProperty(liveBackground, "useGpuUndistortion", false);
 
             // LensLabLivePoseReceiver
             SetProperty(poseReceiver, "poseTarget",      arContent.transform);

@@ -2,9 +2,22 @@ using UnityEngine;
 
 namespace LensLab.Runtime
 {
+    /// <summary>
+    /// Binds a live camera-feed Texture to the projection-validation overlay.
+    ///
+    /// Frame source priority:
+    ///   1. LensLabPoseClient (publisher mode — Python owns the camera).
+    ///   2. LensLabWebCamSource (legacy mode — Unity owns the camera). Kept for
+    ///      offline tests; not used in the default scene.
+    ///
+    /// In publisher mode this script does no per-frame GPU work: the PoseClient
+    /// already produces a Texture2D each frame, and we just rebind it to the
+    /// overlay when its identity changes.
+    /// </summary>
     public class LensLabLiveCameraBackground : MonoBehaviour
     {
-        [Header("Dependencies")]
+        [Header("Frame source (preferred: PoseClient)")]
+        [SerializeField] private LensLabPoseClient poseClient;
         [SerializeField] private LensLabWebCamSource webCamSource;
         [SerializeField] private LensLabProjectionValidationOverlay validationOverlay;
         [SerializeField] private LensLabUndistortionController undistortionController;
@@ -13,7 +26,6 @@ namespace LensLab.Runtime
         [Header("Background Mode")]
         [SerializeField] private bool useGpuUndistortion = false;
         [SerializeField] private bool runUndistortionEveryCameraFrame = true;
-        [SerializeField] private bool copyRawCameraToRenderTexture = true;
         [SerializeField] private bool useCanvasBackgroundForRawLiveTest = false;
 
         [Header("Scene Cleanup")]
@@ -24,10 +36,10 @@ namespace LensLab.Runtime
         [SerializeField] private bool verboseLogging = true;
 
         private Texture lastAppliedTexture;
-        private RenderTexture rawCameraCopy;
         private Vector2Int lastReportedSize;
         private bool warnedAboutMissingDependencies;
-        private bool warnedAboutWaitingForCamera;
+        private bool warnedAboutWaitingForFrames;
+        private bool warnedAboutMissingUndistortionController;
 
         private void Reset()
         {
@@ -50,27 +62,26 @@ namespace LensLab.Runtime
         {
             TryAutoAssignDependencies();
 
-            if (webCamSource == null || validationOverlay == null)
+            if (validationOverlay == null || (poseClient == null && webCamSource == null))
             {
                 WarnAboutMissingDependenciesOnce();
                 return;
             }
 
-            if (!webCamSource.IsReady)
+            var sourceTexture = ResolveSourceTexture();
+            if (sourceTexture == null)
             {
-                if (!webCamSource.IsPlaying)
-                {
-                    webCamSource.StartCamera();
-                }
-
-                WarnAboutWaitingForCameraOnce();
+                WarnAboutWaitingForFramesOnce();
                 return;
             }
 
-            warnedAboutWaitingForCamera = false;
-            WarnAboutResolutionMismatchOnce();
+            warnedAboutWaitingForFrames = false;
+            WarnAboutResolutionMismatchOnce(sourceTexture);
 
-            var texture = ResolveBackgroundTexture();
+            var texture = useGpuUndistortion
+                ? RunUndistortion(sourceTexture)
+                : sourceTexture;
+
             if (texture == null)
             {
                 return;
@@ -109,27 +120,55 @@ namespace LensLab.Runtime
             UpdateLiveBackground();
         }
 
-        private Texture ResolveBackgroundTexture()
+        // ------------------------------------------------------------------
+        // Frame source resolution
+        // ------------------------------------------------------------------
+
+        private Texture ResolveSourceTexture()
         {
-            var cameraTexture = webCamSource.CurrentTexture;
-            if (!useGpuUndistortion)
+            // Prefer the network-driven pose client (publisher mode).
+            if (poseClient != null && poseClient.HasFrame && poseClient.CurrentTexture != null)
             {
-                return copyRawCameraToRenderTexture
-                    ? UpdateRawCameraCopy(cameraTexture)
-                    : cameraTexture;
+                return poseClient.CurrentTexture;
             }
 
+            // Fall back to a locally-owned WebCamTexture (legacy / offline test).
+            if (webCamSource != null)
+            {
+                if (!webCamSource.IsReady)
+                {
+                    if (!webCamSource.IsPlaying)
+                    {
+                        webCamSource.StartCamera();
+                    }
+                    return null;
+                }
+                return webCamSource.CurrentTexture;
+            }
+
+            return null;
+        }
+
+        private Texture RunUndistortion(Texture source)
+        {
             if (undistortionController == null)
             {
-                Debug.LogError(
-                    $"[{nameof(LensLabLiveCameraBackground)}] GPU undistortion is enabled but no undistortion controller is assigned.",
-                    this
-                );
-                return cameraTexture;
+                if (!warnedAboutMissingUndistortionController)
+                {
+                    warnedAboutMissingUndistortionController = true;
+                    Debug.LogWarning(
+                        $"[{nameof(LensLabLiveCameraBackground)}] " +
+                        "Use Gpu Undistortion is enabled but no LensLabUndistortionController is in the scene. " +
+                        "Falling back to the raw camera frame for the background. " +
+                        "Disable 'Use Gpu Undistortion' in the inspector to silence this warning.",
+                        this
+                    );
+                }
+                return source;
             }
 
-            undistortionController.SetInputTexture(cameraTexture, false);
-            if (runUndistortionEveryCameraFrame && webCamSource.DidUpdateThisFrame)
+            undistortionController.SetInputTexture(source, false);
+            if (runUndistortionEveryCameraFrame && DidSourceUpdateThisFrame())
             {
                 undistortionController.RunUndistortion();
             }
@@ -140,49 +179,37 @@ namespace LensLab.Runtime
 
             return undistortionController.OutputTexture != null
                 ? undistortionController.OutputTexture
-                : cameraTexture;
+                : source;
         }
 
-        private Texture UpdateRawCameraCopy(Texture cameraTexture)
+        private bool DidSourceUpdateThisFrame()
         {
-            if (cameraTexture == null)
+            if (poseClient != null && poseClient.HasFrame)
             {
-                return null;
+                return poseClient.DidUpdateThisFrame;
             }
-
-            EnsureRawCameraCopy(cameraTexture.width, cameraTexture.height);
-            Graphics.Blit(cameraTexture, rawCameraCopy);
-
-            return rawCameraCopy;
+            return webCamSource != null && webCamSource.DidUpdateThisFrame;
         }
 
-        private void EnsureRawCameraCopy(int width, int height)
-        {
-            if (rawCameraCopy != null && rawCameraCopy.width == width && rawCameraCopy.height == height)
-            {
-                return;
-            }
-
-            ReleaseRawCameraCopy();
-            rawCameraCopy = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default)
-            {
-                name = "LensLabRawWebCamCopy",
-                hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-                useMipMap = false,
-                autoGenerateMips = false,
-            };
-            rawCameraCopy.Create();
-        }
+        // ------------------------------------------------------------------
+        // Dependency wiring
+        // ------------------------------------------------------------------
 
         private void TryAutoAssignDependencies()
         {
+            if (poseClient == null)
+            {
+                poseClient = GetComponent<LensLabPoseClient>();
+            }
+            if (poseClient == null)
+            {
+                poseClient = FindObjectOfType<LensLabPoseClient>(true);
+            }
+
             if (webCamSource == null)
             {
                 webCamSource = GetComponent<LensLabWebCamSource>();
             }
-
             if (webCamSource == null)
             {
                 webCamSource = FindObjectOfType<LensLabWebCamSource>(true);
@@ -219,12 +246,16 @@ namespace LensLab.Runtime
                 {
                     Debug.Log(
                         $"[{nameof(LensLabLiveCameraBackground)}] Disabled {nameof(LensLabPoseBoardDebug)} " +
-                        "for the raw live camera test. Re-enable it when live pose data is available.",
+                        "for the live camera test. Re-enable it when static pose data should be displayed.",
                         this
                     );
                 }
             }
         }
+
+        // ------------------------------------------------------------------
+        // Diagnostics
+        // ------------------------------------------------------------------
 
         private void WarnAboutMissingDependenciesOnce()
         {
@@ -236,30 +267,30 @@ namespace LensLab.Runtime
             warnedAboutMissingDependencies = true;
             Debug.LogError(
                 $"[{nameof(LensLabLiveCameraBackground)}] Missing setup. " +
-                $"WebCam Source assigned: {webCamSource != null}, Validation Overlay assigned: {validationOverlay != null}. " +
-                "Add LensLabWebCamSource to this GameObject and assign the Main Camera's LensLabProjectionValidationOverlay.",
+                $"PoseClient assigned: {poseClient != null}, WebCamSource assigned: {webCamSource != null}, " +
+                $"ValidationOverlay assigned: {validationOverlay != null}.",
                 this
             );
         }
 
-        private void WarnAboutWaitingForCameraOnce()
+        private void WarnAboutWaitingForFramesOnce()
         {
-            if (warnedAboutWaitingForCamera)
+            if (warnedAboutWaitingForFrames)
             {
                 return;
             }
 
-            warnedAboutWaitingForCamera = true;
+            warnedAboutWaitingForFrames = true;
             Debug.Log(
-                $"[{nameof(LensLabLiveCameraBackground)}] Waiting for WebCamTexture to become ready. " +
-                "If this stays forever, check camera permission or camera index.",
+                $"[{nameof(LensLabLiveCameraBackground)}] Waiting for camera frames. " +
+                "Make sure pose_server.py is running.",
                 this
             );
         }
 
-        private void WarnAboutResolutionMismatchOnce()
+        private void WarnAboutResolutionMismatchOnce(Texture source)
         {
-            if (!warnIfResolutionDiffersFromCalibration || calibrationLoader == null)
+            if (!warnIfResolutionDiffersFromCalibration || calibrationLoader == null || source == null)
             {
                 return;
             }
@@ -273,21 +304,21 @@ namespace LensLab.Runtime
                 }
             }
 
-            var actualSize = webCamSource.ActualSize;
-            if (actualSize == lastReportedSize)
+            var size = new Vector2Int(source.width, source.height);
+            if (size == lastReportedSize)
             {
                 return;
             }
 
-            lastReportedSize = actualSize;
+            lastReportedSize = size;
             var calibration = calibrationLoader.LoadedCalibration;
-            if (actualSize.x == calibration.image_width && actualSize.y == calibration.image_height)
+            if (size.x == calibration.image_width && size.y == calibration.image_height)
             {
                 if (verboseLogging)
                 {
                     Debug.Log(
-                        $"[{nameof(LensLabLiveCameraBackground)}] WebCam resolution matches calibration: " +
-                        $"{actualSize.x}x{actualSize.y}.",
+                        $"[{nameof(LensLabLiveCameraBackground)}] Camera frame size matches calibration: " +
+                        $"{size.x}x{size.y}.",
                         this
                     );
                 }
@@ -295,32 +326,11 @@ namespace LensLab.Runtime
             }
 
             Debug.LogWarning(
-                $"[{nameof(LensLabLiveCameraBackground)}] WebCam resolution {actualSize.x}x{actualSize.y} " +
+                $"[{nameof(LensLabLiveCameraBackground)}] Frame size {size.x}x{size.y} " +
                 $"does not match calibration {calibration.image_width}x{calibration.image_height}. " +
                 "Use the same resolution for the cleanest projection validation.",
                 this
             );
-        }
-
-        private void OnDestroy()
-        {
-            ReleaseRawCameraCopy();
-        }
-
-        private void ReleaseRawCameraCopy()
-        {
-            if (rawCameraCopy == null)
-            {
-                return;
-            }
-
-            if (rawCameraCopy.IsCreated())
-            {
-                rawCameraCopy.Release();
-            }
-
-            Destroy(rawCameraCopy);
-            rawCameraCopy = null;
         }
     }
 }

@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace LensLab.Runtime
@@ -8,23 +11,25 @@ namespace LensLab.Runtime
     /// <summary>
     /// Launches and manages the Python pose_server.py process from within Unity.
     ///
-    /// When <see cref="launchOnPlay"/> is enabled (default), pressing Play in the
-    /// Editor automatically starts the server and stops it when Play ends. The
-    /// server's stdout and stderr are forwarded to the Unity Console so you do not
-    /// need a separate terminal.
+    /// Lifecycle guarantees
+    /// --------------------
+    /// 1. **Pre-launch port probe**: if something is already listening on the target
+    ///    port we treat it as an orphan from a previous Unity session, kill the
+    ///    process(es), and only then start ours.
+    /// 2. **Windows Job Object**: on Windows the spawned Python process is attached
+    ///    to a Job Object configured with KILL_ON_JOB_CLOSE. If Unity itself crashes
+    ///    or is force-killed, Windows kernel kills Python automatically, preventing
+    ///    orphan processes that would hold the webcam.
+    /// 3. **Auto-restart**: configurable. If Python exits unexpectedly while Play
+    ///    mode is still active we relaunch it after a short backoff.
+    /// 4. **Clean shutdown**: <see cref="OnDestroy"/> and <see cref="OnApplicationQuit"/>
+    ///    both kill the process; the Job Object is the safety net for the case
+    ///    where neither callback fires.
     ///
-    /// Path resolution
-    /// ---------------
-    /// With <see cref="autoResolvePath"/> enabled the launcher walks three directories
-    /// above <c>Application.dataPath</c> to find the repository root, then appends
-    /// <c>calibration/scripts/pose_server.py</c>. This matches the LensLab repository
-    /// layout. Override with <see cref="customScriptPath"/> if needed.
-    ///
-    /// Standalone builds
-    /// -----------------
-    /// The launcher silently skips startup if the script file cannot be found, so it
-    /// does not break standalone builds. The Python server is a development-time tool.
+    /// stdout / stderr are forwarded to the Unity Console so a separate terminal is
+    /// not needed.
     /// </summary>
+    [DefaultExecutionOrder(-100)] // run before LensLabPoseClient
     public class LensLabPoseServerLauncher : MonoBehaviour
     {
         // ------------------------------------------------------------------
@@ -34,6 +39,24 @@ namespace LensLab.Runtime
         [Header("Startup")]
         [Tooltip("Automatically start the server when entering Play mode.")]
         [SerializeField] private bool launchOnPlay = true;
+
+        [Tooltip("If something is already listening on the target port at launch, " +
+                 "kill it before starting our own server. Recommended.")]
+        [SerializeField] private bool killOrphanOnLaunch = true;
+
+        [Header("Crash recovery")]
+        [Tooltip("Restart the server if it exits unexpectedly while Play mode is active.")]
+        [SerializeField] private bool autoRestartOnCrash = true;
+
+        [Tooltip("Seconds to wait before restarting after an unexpected exit.")]
+        [SerializeField] private float autoRestartDelay = 1.5f;
+
+        [Tooltip("Maximum consecutive auto-restart attempts before giving up. " +
+                 "Resets to zero on every successful run that lasts longer than " +
+                 "Auto Restart Reset Threshold seconds.")]
+        [SerializeField] private int maxAutoRestartAttempts = 5;
+
+        [SerializeField] private float autoRestartResetThreshold = 10f;
 
         [Header("Python / Conda")]
         [Tooltip(
@@ -75,15 +98,29 @@ namespace LensLab.Runtime
         /// <summary>True while the Python process is alive.</summary>
         public bool IsRunning => _process != null && !_process.HasExited;
 
+        /// <summary>Total times we've started the server in this Play session (initial + auto-restarts).</summary>
+        public int LaunchCount { get; private set; }
+
         // ------------------------------------------------------------------
         // Private state
         // ------------------------------------------------------------------
 
         private Process _process;
+        private IntPtr _jobHandle = IntPtr.Zero;
+        private bool _intentionalShutdown;
+        private int _consecutiveCrashCount;
+        private float _lastLaunchTime;
+        private float _nextAutoRestartTime;
+        private bool _autoRestartPending;
 
         // ------------------------------------------------------------------
         // Unity lifecycle
         // ------------------------------------------------------------------
+
+        private void Awake()
+        {
+            CreateJobObjectIfWindows();
+        }
 
         private void Start()
         {
@@ -93,14 +130,56 @@ namespace LensLab.Runtime
             }
         }
 
+        private void Update()
+        {
+            // Detect unexpected exits and schedule a restart if configured.
+            if (_process != null && _process.HasExited && !_intentionalShutdown && !_autoRestartPending)
+            {
+                var ranLongEnough = Time.realtimeSinceStartup - _lastLaunchTime >= autoRestartResetThreshold;
+                if (ranLongEnough)
+                {
+                    _consecutiveCrashCount = 0;
+                }
+
+                if (autoRestartOnCrash && _consecutiveCrashCount < maxAutoRestartAttempts)
+                {
+                    _autoRestartPending = true;
+                    _nextAutoRestartTime = Time.realtimeSinceStartup + autoRestartDelay;
+                    UnityEngine.Debug.LogWarning(
+                        $"[{nameof(LensLabPoseServerLauncher)}] Server exited unexpectedly " +
+                        $"(attempt {_consecutiveCrashCount + 1}/{maxAutoRestartAttempts}). " +
+                        $"Auto-restarting in {autoRestartDelay:F1}s...",
+                        this
+                    );
+                }
+                else if (autoRestartOnCrash)
+                {
+                    UnityEngine.Debug.LogError(
+                        $"[{nameof(LensLabPoseServerLauncher)}] Server has crashed " +
+                        $"{maxAutoRestartAttempts} times in a row. Auto-restart disabled. " +
+                        "Use the context menu 'Start Server' once you've fixed the cause.",
+                        this
+                    );
+                }
+            }
+
+            if (_autoRestartPending && Time.realtimeSinceStartup >= _nextAutoRestartTime)
+            {
+                _autoRestartPending = false;
+                _consecutiveCrashCount++;
+                StartServer();
+            }
+        }
+
         private void OnDestroy()
         {
-            StopServer();
+            StopServer(intentional: true);
+            DestroyJobObject();
         }
 
         private void OnApplicationQuit()
         {
-            StopServer();
+            StopServer(intentional: true);
         }
 
         // ------------------------------------------------------------------
@@ -115,9 +194,24 @@ namespace LensLab.Runtime
             {
                 if (verboseLogging)
                 {
-                    UnityEngine.Debug.Log($"[{nameof(LensLabPoseServerLauncher)}] Server is already running (PID {_process.Id}).", this);
+                    UnityEngine.Debug.Log(
+                        $"[{nameof(LensLabPoseServerLauncher)}] Server is already running (PID {_process.Id}).",
+                        this
+                    );
                 }
                 return;
+            }
+
+            // Clear stale handle from previous run.
+            if (_process != null)
+            {
+                _process.Dispose();
+                _process = null;
+            }
+
+            if (killOrphanOnLaunch)
+            {
+                KillOrphanServersBoundToPort(port);
             }
 
             var scriptPath = ResolveScriptPath();
@@ -148,12 +242,18 @@ namespace LensLab.Runtime
                 _process.BeginOutputReadLine();
                 _process.BeginErrorReadLine();
 
+                AttachProcessToJobObject(_process);
+
+                _intentionalShutdown = false;
+                _lastLaunchTime = Time.realtimeSinceStartup;
+                LaunchCount++;
+
                 if (verboseLogging)
                 {
                     UnityEngine.Debug.Log(
                         $"[{nameof(LensLabPoseServerLauncher)}] Started pose server " +
-                        $"(PID {_process.Id}) on port {port}.\n" +
-                        $"Command: {pythonExecutable} {arguments}",
+                        $"(PID {_process.Id}) on port {port}. Launch #{LaunchCount}.\n" +
+                        $"Command: {executable} {arguments}",
                         this
                     );
                 }
@@ -176,6 +276,21 @@ namespace LensLab.Runtime
         [ContextMenu("Stop Server")]
         public void StopServer()
         {
+            StopServer(intentional: true);
+        }
+
+        [ContextMenu("Restart Server")]
+        public void RestartServer()
+        {
+            StopServer(intentional: true);
+            StartServer();
+        }
+
+        private void StopServer(bool intentional)
+        {
+            _autoRestartPending = false;
+            _intentionalShutdown = intentional;
+
             if (_process == null)
             {
                 return;
@@ -190,7 +305,10 @@ namespace LensLab.Runtime
 
                     if (verboseLogging)
                     {
-                        UnityEngine.Debug.Log($"[{nameof(LensLabPoseServerLauncher)}] Pose server stopped.", this);
+                        UnityEngine.Debug.Log(
+                            $"[{nameof(LensLabPoseServerLauncher)}] Pose server stopped.",
+                            this
+                        );
                     }
                 }
             }
@@ -203,9 +321,90 @@ namespace LensLab.Runtime
             }
             finally
             {
-                _process.Dispose();
+                try { _process.Dispose(); } catch { /* ignore */ }
                 _process = null;
             }
+        }
+
+        // ------------------------------------------------------------------
+        // Orphan detection: probe the port, then kill anything holding it
+        // ------------------------------------------------------------------
+
+        private void KillOrphanServersBoundToPort(int targetPort)
+        {
+            // Cheap check first: is something listening?
+            if (!IsPortInUse(targetPort))
+            {
+                return;
+            }
+
+            UnityEngine.Debug.LogWarning(
+                $"[{nameof(LensLabPoseServerLauncher)}] Port {targetPort} is already in use " +
+                "(probably a pose_server.py orphan from a previous Unity session). " +
+                "Attempting to kill it...",
+                this
+            );
+
+            UnityEngine.Debug.LogWarning(
+                $"[{nameof(LensLabPoseServerLauncher)}] Automatic orphan killing is disabled to avoid " +
+                "terminating unrelated Python processes. Stop the process holding this port manually, " +
+                "or change the server/client port.",
+                this
+            );
+        }
+
+        private static bool IsPortInUse(int port)
+        {
+            try
+            {
+                using (var probe = new TcpClient())
+                {
+                    var task = probe.BeginConnect("127.0.0.1", port, null, null);
+                    var connected = task.AsyncWaitHandle.WaitOne(150);
+                    if (connected && probe.Connected)
+                    {
+                        probe.EndConnect(task);
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Connect failed -> port is free (or firewall blocked us; same effect).
+            }
+            return false;
+        }
+
+        private static int TryKillProcessesByName(string name)
+        {
+            var count = 0;
+            Process[] candidates;
+            try { candidates = Process.GetProcessesByName(name); }
+            catch { return 0; }
+
+            foreach (var proc in candidates)
+            {
+                try
+                {
+                    if (proc.HasExited)
+                    {
+                        proc.Dispose();
+                        continue;
+                    }
+                    proc.Kill();
+                    proc.WaitForExit(1000);
+                    count++;
+                }
+                catch
+                {
+                    // Probably "Access denied" — not our process. Move on.
+                }
+                finally
+                {
+                    try { proc.Dispose(); } catch { }
+                }
+            }
+            return count;
         }
 
         // ------------------------------------------------------------------
@@ -268,10 +467,6 @@ namespace LensLab.Runtime
 
         /// <summary>
         /// Returns (executableFileName, arguments) for the process.
-        /// When a conda environment is specified the command becomes:
-        ///   conda run --no-capture-output -n &lt;env&gt; python "&lt;script&gt;" [args]
-        /// Otherwise:
-        ///   &lt;pythonExecutable&gt; "&lt;script&gt;" [args]
         /// </summary>
         private (string executable, string arguments) BuildCommand(string scriptPath)
         {
@@ -284,13 +479,11 @@ namespace LensLab.Runtime
             var envName = condaEnvironmentName.Trim();
             if (!string.IsNullOrEmpty(envName))
             {
-                // conda run --no-capture-output ensures stdout/stderr are streamed
-                // in real time rather than buffered until the process exits.
-                var arguments = $"run --no-capture-output -n \"{envName}\" python \"{scriptPath}\" {serverArgs}";
+                var arguments = $"run --no-capture-output -n \"{envName}\" python -u \"{scriptPath}\" {serverArgs}";
                 return ("conda", arguments);
             }
 
-            return (pythonExecutable, $"\"{scriptPath}\" {serverArgs}");
+            return (pythonExecutable, $"-u \"{scriptPath}\" {serverArgs}");
         }
 
         // ------------------------------------------------------------------
@@ -315,12 +508,182 @@ namespace LensLab.Runtime
 
         private void OnServerExited(object sender, EventArgs e)
         {
-            var exitCode = _process?.ExitCode ?? -1;
+            int exitCode = -1;
+            try { exitCode = _process?.ExitCode ?? -1; }
+            catch { /* process already disposed */ }
+
             if (verboseLogging)
             {
                 UnityEngine.Debug.Log(
                     $"[{nameof(LensLabPoseServerLauncher)}] Server process exited (code {exitCode})."
                 );
+            }
+            // The Update loop notices the exit and schedules a restart on the
+            // main thread; we don't act on it here because we're on a thread
+            // pool worker and Unity APIs are main-thread only.
+        }
+
+        // ------------------------------------------------------------------
+        // Windows Job Object: ensure the Python process dies if Unity crashes.
+        // ------------------------------------------------------------------
+
+        private void CreateJobObjectIfWindows()
+        {
+            if (Application.platform != RuntimePlatform.WindowsPlayer
+                && Application.platform != RuntimePlatform.WindowsEditor)
+            {
+                return;
+            }
+
+            try
+            {
+                _jobHandle = NativeJob.CreateKillOnCloseJob();
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"[{nameof(LensLabPoseServerLauncher)}] Could not create Windows Job Object: {ex.Message}. " +
+                    "Orphan Python processes may survive a Unity crash.",
+                    this
+                );
+                _jobHandle = IntPtr.Zero;
+            }
+        }
+
+        private void AttachProcessToJobObject(Process proc)
+        {
+            if (_jobHandle == IntPtr.Zero || proc == null)
+            {
+                return;
+            }
+
+            try
+            {
+                NativeJob.AssignProcessToJob(_jobHandle, proc.Handle);
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"[{nameof(LensLabPoseServerLauncher)}] Failed to attach Python process to Job Object: {ex.Message}",
+                    this
+                );
+            }
+        }
+
+        private void DestroyJobObject()
+        {
+            if (_jobHandle != IntPtr.Zero)
+            {
+                try { NativeJob.CloseHandle(_jobHandle); } catch { }
+                _jobHandle = IntPtr.Zero;
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Native (Windows-only) Job Object helpers.
+        // No-op on other platforms — the methods are still callable but the
+        // CreateKillOnCloseJob will throw an exception that we swallow above.
+        // ------------------------------------------------------------------
+
+        private static class NativeJob
+        {
+            private const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000;
+            private const int JobObjectExtendedLimitInformation = 9;
+
+            [StructLayout(LayoutKind.Sequential)]
+            private struct IO_COUNTERS
+            {
+                public ulong ReadOperationCount;
+                public ulong WriteOperationCount;
+                public ulong OtherOperationCount;
+                public ulong ReadTransferCount;
+                public ulong WriteTransferCount;
+                public ulong OtherTransferCount;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            private struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+            {
+                public long  PerProcessUserTimeLimit;
+                public long  PerJobUserTimeLimit;
+                public uint  LimitFlags;
+                public UIntPtr MinimumWorkingSetSize;
+                public UIntPtr MaximumWorkingSetSize;
+                public uint  ActiveProcessLimit;
+                public UIntPtr Affinity;
+                public uint  PriorityClass;
+                public uint  SchedulingClass;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            private struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+            {
+                public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+                public IO_COUNTERS IoInfo;
+                public UIntPtr ProcessMemoryLimit;
+                public UIntPtr JobMemoryLimit;
+                public UIntPtr PeakProcessMemoryUsed;
+                public UIntPtr PeakJobMemoryUsed;
+            }
+
+            [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+            private static extern IntPtr CreateJobObjectW(IntPtr lpJobAttributes, string lpName);
+
+            [DllImport("kernel32.dll", SetLastError = true)]
+            private static extern bool SetInformationJobObject(
+                IntPtr hJob, int infoClass, IntPtr lpInfo, uint cbInfo);
+
+            [DllImport("kernel32.dll", SetLastError = true)]
+            private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+
+            [DllImport("kernel32.dll", SetLastError = true)]
+            public static extern bool CloseHandle(IntPtr hObject);
+
+            public static IntPtr CreateKillOnCloseJob()
+            {
+                var hJob = CreateJobObjectW(IntPtr.Zero, null);
+                if (hJob == IntPtr.Zero)
+                {
+                    throw new InvalidOperationException(
+                        $"CreateJobObjectW failed (err={Marshal.GetLastWin32Error()})");
+                }
+
+                var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+                {
+                    BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
+                    {
+                        LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+                    },
+                };
+
+                var size = Marshal.SizeOf(info);
+                var ptr  = Marshal.AllocHGlobal(size);
+                try
+                {
+                    Marshal.StructureToPtr(info, ptr, fDeleteOld: false);
+                    if (!SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, ptr, (uint)size))
+                    {
+                        var err = Marshal.GetLastWin32Error();
+                        CloseHandle(hJob);
+                        throw new InvalidOperationException(
+                            $"SetInformationJobObject failed (err={err})");
+                    }
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(ptr);
+                }
+
+                return hJob;
+            }
+
+            public static void AssignProcessToJob(IntPtr hJob, IntPtr hProcess)
+            {
+                if (!AssignProcessToJobObject(hJob, hProcess))
+                {
+                    throw new InvalidOperationException(
+                        $"AssignProcessToJobObject failed (err={Marshal.GetLastWin32Error()})");
+                }
             }
         }
     }
