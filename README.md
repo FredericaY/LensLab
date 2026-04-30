@@ -15,6 +15,22 @@ LensLab -> Setup -> Create Live AR Scene
 
 After that, press Play. Unity starts the Python pose server, receives camera frames over TCP, shows the live background, and anchors `LensLabARContent` to the detected ChArUco board.
 
+## Preview
+
+![LensLab architecture](docs/reports/architecture.png)
+
+**Live calibration**
+
+![Live ChArUco calibration](docs/reports/pic-1-CreateCalibrationJson.png)
+
+**Unity AR result**
+
+![Unity Game View AR result](docs/reports/pic-2-GameView.png)
+
+**Scene setup**
+
+![Unity Scene View setup](docs/reports/pic-3-ARObjectIn3DScene.png)
+
 ## Environment
 
 Recommended baseline:
