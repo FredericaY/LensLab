@@ -154,7 +154,11 @@ def detect_and_estimate_pose(
     )
     charuco_count = 0 if charuco_ids is None else int(len(charuco_ids))
 
-    if charuco_corners is None or charuco_ids is None or charuco_count < min_corners:
+    # cv2.SOLVEPNP_ITERATIVE uses DLT for initialization and needs at least
+    # 6 3D-2D correspondences. Treat fewer corners as "not detected" instead
+    # of letting OpenCV raise and kill the capture thread.
+    required_corners = max(int(min_corners), 6)
+    if charuco_corners is None or charuco_ids is None or charuco_count < required_corners:
         return {
             "detected": False,
             "marker_count": marker_count,
@@ -165,10 +169,18 @@ def detect_and_estimate_pose(
     object_points = chessboard_corners[charuco_ids.flatten()].reshape(-1, 1, 3)
     image_points = charuco_corners.reshape(-1, 1, 2)
 
-    success, rvec, tvec = cv2.solvePnP(
-        object_points, image_points, camera_matrix, dist_coeffs,
-        flags=cv2.SOLVEPNP_ITERATIVE,
-    )
+    try:
+        success, rvec, tvec = cv2.solvePnP(
+            object_points, image_points, camera_matrix, dist_coeffs,
+            flags=cv2.SOLVEPNP_ITERATIVE,
+        )
+    except cv2.error as exc:
+        return {
+            "detected": False,
+            "marker_count": marker_count,
+            "charuco_corner_count": charuco_count,
+            "error": f"solvepnp_failed: {exc}",
+        }
     if not success or rvec is None or tvec is None:
         return {
             "detected": False,
@@ -366,11 +378,18 @@ def capture_loop(
             matrix_size = (frame_w, frame_h)
             frame_camera_matrix = scale_camera_matrix(camera_matrix, calibration, frame_w, frame_h)
 
-        # Detect pose
-        pose = detect_and_estimate_pose(
-            frame, board, aruco_dictionary, detector,
-            frame_camera_matrix, dist_coeffs, min_corners,
-        )
+        try:
+            pose = detect_and_estimate_pose(
+                frame, board, aruco_dictionary, detector,
+                frame_camera_matrix, dist_coeffs, min_corners,
+            )
+        except Exception as exc:
+            pose = {
+                "detected": False,
+                "marker_count": 0,
+                "charuco_corner_count": 0,
+                "error": f"detection_failed: {exc}",
+            }
 
         # Encode JPEG
         ok, encoded = cv2.imencode(".jpg", frame, encode_params)
@@ -504,16 +523,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--backend", type=str, default="dshow",
                         choices=["auto", "dshow", "msmf"],
                         help="OpenCV capture backend on Windows (default: dshow).")
-    parser.add_argument("--width", type=int, default=1280,
-                        help="Requested capture width in pixels (default: 1280).")
-    parser.add_argument("--height", type=int, default=720,
-                        help="Requested capture height in pixels (default: 720).")
+    parser.add_argument("--width", type=int, default=1920,
+                        help="Requested capture width in pixels (default: 1920).")
+    parser.add_argument("--height", type=int, default=1080,
+                        help="Requested capture height in pixels (default: 1080).")
     parser.add_argument("--fps", type=int, default=30,
                         help="Requested capture frame rate (default: 30).")
     parser.add_argument("--jpeg-quality", type=int, default=75,
                         help="JPEG encode quality 0-100 (default: 75).")
-    parser.add_argument("--min-corners", type=int, default=4,
-                        help="Minimum ChArUco corners required to estimate pose (default: 4).")
+    parser.add_argument("--min-corners", type=int, default=6,
+                        help="Minimum ChArUco corners required to estimate pose (default: 6).")
     parser.add_argument("--verbose", action="store_true", default=True,
                         help="Print fps and pose summary every 2s (default: on).")
     parser.add_argument("--no-verbose", dest="verbose", action="store_false",

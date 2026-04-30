@@ -1,10 +1,6 @@
 ﻿camera_name: default_camera
 distortion_model: opencv_rational
 
-input:
-  image_dir: data/offline_calibration_images
-  image_glob: "*.png"
-
 output:
   output_dir: calibration/output
   calibration_json: camera_calibration.json

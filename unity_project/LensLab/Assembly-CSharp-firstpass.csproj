@@ -43,7 +43,6 @@
   <ItemGroup>
     <None Include="Assets\Plugins\LensLab\Resources\LensLab\lenslab_calibration.json" />
     <None Include="Assets\Plugins\LensLab\Shaders\LensLabUndistortion.compute" />
-    <None Include="Assets\Plugins\LensLab\Resources\LensLab\lenslab_pose.json" />
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
     </Reference>

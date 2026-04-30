@@ -1,52 +1,46 @@
 # LensLab
 
-LensLab is a Unity-facing computer vision project for camera calibration, GPU undistortion, pose estimation, and virtual camera matching.
+LensLab is a Unity + OpenCV live AR prototype built around a ChArUco target.
 
-This repository is being developed as a practical vertical slice rather than a set of disconnected experiments. The current milestone delivers ChArUco calibration, pose estimation, and a Unity validation path using live-captured calibration data.
+The project has two core workflows:
 
-## Current Milestone Status
+1. **Python live camera calibration**: OpenCV captures ChArUco observations from a real camera and writes shared camera intrinsics to JSON.
+2. **Unity TCP AR runtime**: Python owns the webcam, estimates pose in real time, streams `(JPEG frame, pose JSON)` over TCP, and Unity renders virtual content over the live camera feed.
 
-The project has completed the following stage:
+The Unity side can create the complete demo scene from one menu item:
 
-1. ChArUco-based camera calibration in Python/OpenCV
-2. Shared calibration JSON export
-3. Unity-side calibration loading
-4. GPU undistortion validation against a Python/OpenCV reference
-5. Calibrated Unity camera projection mapping
-6. Single-image ChArUco pose estimation in Python
-7. Unity pose loading and board-region validation against the reference image
+```text
+LensLab -> Setup -> Create Live AR Scene
+```
 
-At the end of this milestone, the system can:
+After that, press Play. Unity starts the Python pose server, receives camera frames over TCP, shows the live background, and anchors `LensLabARContent` to the detected ChArUco board.
 
-- calibrate a camera from ChArUco images
-- export intrinsics and distortion coefficients to JSON
-- undistort images in both Python and Unity when needed for validation
-- map calibrated intrinsics onto a Unity Camera
-- estimate board pose from a known ChArUco target
-- render a Unity-side board region back onto the target image for validation
+## Environment
 
-This means the main offline integration path is working end-to-end.
+Recommended baseline:
 
-## What Has Been Validated
+- Windows
+- Unity 2022.3 LTS
+- Python 3.10
+- Conda environment named `lenslab`
+- A webcam that supports MJPG at the desired runtime resolution
 
-### Python / OpenCV
+Create the Python environment:
 
-- ChArUco detection and frame filtering
-- camera calibration with reprojection statistics
-- undistortion preview generation
-- single-image pose estimation with `solvePnP`
-- shared JSON export for calibration and pose
+```powershell
+conda create -n lenslab python=3.10 numpy scipy pyyaml pip -y
+conda run -n lenslab python -m pip install opencv-contrib-python matplotlib
+```
 
-### Unity
+The Unity launcher defaults to:
 
-- loading calibration JSON from `Resources`
-- compute-shader GPU undistortion
-- Python/OpenCV vs Unity GPU undistortion comparison
-- calibrated projection matrix application to `Camera.projectionMatrix`
-- loading pose JSON from `Resources`
-- rendering a board-aligned validation surface over the reference image
+```text
+conda run --no-capture-output -n lenslab python -u calibration/scripts/pose_server.py
+```
 
-## Repository Structure
+If your environment has a different name, edit `LensLabPoseServerLauncher -> Conda Environment Name` in the Unity Inspector.
+
+## Repository Layout
 
 ```text
 LensLab/
@@ -54,269 +48,206 @@ LensLab/
 |   +-- configs/
 |   |   \-- charuco_board.yaml
 |   +-- output/
-|   |   +-- camera_calibration.json
-|   |   +-- live_capture/
-|   |   +-- pose_estimation/
-|   |   \-- undistort_preview/
+|   |   \-- camera_calibration.json
 |   \-- scripts/
-|       +-- calibrate_camera.py
 |       +-- calibration/
 |       |   +-- calibrate.py
-|       |   +-- offline.py
 |       |   \-- live.py
-|       +-- estimate_pose.py
-|       \-- undistort_preview.py
-+-- data/
-|   +-- offline_calibration_images/
-|   \-- samples/
-+-- docs/
-|   +-- architecture/
-|   +-- notes/
-|   \-- reports/
-+-- native_plugin/
-+-- shaders/
+|       \-- pose_server.py
 +-- unity_project/
 |   \-- LensLab/
-|       \-- Assets/
-|           +-- Plugins/
-|           |   \-- LensLab/
-|           |       +-- Resources/
-|           |       +-- Runtime/
-|           |       \-- Shaders/
-|           \-- Scenes/
+|       +-- Assets/Plugins/LensLab/
+|       |   +-- Editor/
+|       |   +-- Resources/
+|       |   +-- Runtime/
+|       |   \-- Shaders/
+|       +-- Packages/
+|       \-- ProjectSettings/
 \-- README.md
 ```
 
-## Key Runtime Files
+## Live Camera Calibration
 
-### Python
+Print or display the ChArUco board described by:
+
+```text
+calibration/configs/charuco_board.yaml
+```
+
+Run live calibration:
+
+```powershell
+conda run -n lenslab python calibration/scripts/calibration/calibrate.py live --camera-index 0 --width 1920 --height 1080 --save-frames
+```
+
+Controls in the OpenCV preview:
+
+- `space`: accept the current stable ChArUco frame
+- `c`: calibrate from accepted frames and write JSON
+- `q` or `esc`: quit
+
+Output:
+
+```text
+calibration/output/camera_calibration.json
+```
+
+Copy or sync that JSON into Unity Resources when calibration changes:
+
+```text
+unity_project/LensLab/Assets/Plugins/LensLab/Resources/LensLab/lenslab_calibration.json
+```
+
+The runtime works best when calibration and runtime capture use the same resolution.
+
+## Unity Live AR Demo
+
+Open:
+
+```text
+unity_project/LensLab
+```
+
+In Unity:
+
+1. Open or create an empty scene.
+2. Run `LensLab -> Setup -> Create Live AR Scene`.
+3. Press Play.
+
+Created runtime objects:
+
+- `LensLabBootstrap`
+  - `LensLabCalibrationLoader`
+  - `LensLabPoseServerLauncher`
+- `Main Camera`
+  - `LensLabCameraProjectionController`
+  - `LensLabProjectionValidationOverlay`
+- `LensLabLiveCamera`
+  - `LensLabPoseClient`
+  - `LensLabLiveCameraBackground`
+  - `LensLabLivePoseReceiver`
+- `LensLabARContent`
+  - board outline
+  - RGB pose axes
+- `LensLabHUD`
+  - TCP connection status
+  - board detection status
+  - pose metrics
+
+Runtime sequence:
+
+1. Unity launches `pose_server.py`.
+2. Python opens the webcam with OpenCV and requests MJPG.
+3. Python detects the ChArUco board and broadcasts latest frames over TCP.
+4. Unity receives JPEG frames and pose JSON through `LensLabPoseClient`.
+5. Unity displays the live frame as a calibrated world-space background.
+6. `LensLabLivePoseReceiver` drives `LensLabARContent` from the latest pose.
+
+Default TCP endpoint:
+
+```text
+127.0.0.1:5555
+```
+
+## Core Runtime Files
+
+Python:
 
 - `calibration/scripts/calibration/calibrate.py`
-  unified calibration entrypoint with `offline` and `live` modes
-- `calibration/scripts/calibration/offline.py`
-  builds calibration results from the offline ChArUco image folder
 - `calibration/scripts/calibration/live.py`
-  opens a WebCam, collects ChArUco observations, and writes the same calibration JSON format
-- `calibration/scripts/calibrate_camera.py`
-  compatibility wrapper for the offline calibration mode
-- `calibration/scripts/undistort_preview.py`
-  exports Python/OpenCV undistortion previews for validation
-- `calibration/scripts/estimate_pose.py`
-  estimates pose and exports pose JSON with board-model data
+- `calibration/scripts/pose_server.py`
 
-### Calibration Modes
+Unity runtime:
 
-Offline image-folder calibration:
+- `LensLabCalibrationData.cs`
+- `LensLabCalibrationLoader.cs`
+- `LensLabCameraProjectionController.cs`
+- `LensLabProjectionValidationOverlay.cs`
+- `LensLabPoseServerLauncher.cs`
+- `LensLabPoseClient.cs`
+- `LensLabLiveCameraBackground.cs`
+- `LensLabLivePoseData.cs`
+- `LensLabLivePoseReceiver.cs`
+- `LensLabStatusHUD.cs`
 
-```powershell
-python calibration/scripts/calibration/calibrate.py offline
-```
+Unity editor:
 
-Live WebCam calibration:
+- `LensLabEditorMenu.cs`
 
-```powershell
-python calibration/scripts/calibration/calibrate.py live --camera-index 0 --width 1920 --height 1080 --save-frames
-```
+Shader:
 
-In the live preview, press `space` to accept a stable ChArUco frame, press `c` to calibrate from accepted frames, and press `q` or `esc` to exit without writing a new calibration. The legacy command below still runs the offline mode:
+- `LensLabUndistortion.compute`
 
-```powershell
-python calibration/scripts/calibrate_camera.py
-```
+## Data Contracts
 
-### Unity Runtime
+Calibration JSON:
 
-- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabCalibrationLoader.cs`
-- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabUndistortionController.cs`
-- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabCameraProjectionController.cs`
-- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabWebCamSource.cs`
-- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabLiveCameraBackground.cs`
-- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabPoseLoader.cs`
-- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabProjectionValidationOverlay.cs`
-- `unity_project/LensLab/Assets/Plugins/LensLab/Runtime/LensLabPoseBoardDebug.cs`
-
-`LensLabProjectionValidationOverlay` is the calibrated background plane. It can display either the static reference image or a live `WebCamTexture`, while keeping the camera viewport aligned with the calibration image size. `LensLabPoseBoardDebug` uses the same view to draw the projected board region against the camera frame.
-
-### Unity Live Camera Setup
-
-For the first live camera pass, keep the existing `Main Camera` and `LensLabBootstrap` setup, then add one new GameObject:
-
-```text
-LensLabLiveCamera
-```
-
-Attach:
-
-- `LensLabWebCamSource`
-- `LensLabLiveCameraBackground`
-
-Recommended references:
-
-- `LensLabLiveCameraBackground.Web Cam Source` -> `LensLabLiveCamera`
-- `LensLabLiveCameraBackground.Validation Overlay` -> `Main Camera`
-- `LensLabLiveCameraBackground.Calibration Loader` -> `LensLabBootstrap`
-- `LensLabLiveCameraBackground.Use Gpu Undistortion` -> disabled for the first raw-camera test
-- `LensLabLiveCameraBackground.Use Canvas Background For Raw Live Test` -> enabled for the first raw-camera test
-- `LensLabLiveCameraBackground.Disable Static Pose Debug For Raw Live Test` -> enabled for the first raw-camera test
-
-Set `LensLabWebCamSource` to the same capture size used for calibration:
-
-```text
-Requested Width: 1920
-Requested Height: 1080
-Requested FPS: 30
-```
-
-When raw camera display is correct, enable GPU undistortion by adding or assigning `LensLabUndistortionController`, assigning `LensLabUndistortion.compute`, and enabling `Use Gpu Undistortion` on `LensLabLiveCameraBackground`.
-
-During the raw live camera test, disable `LensLabPoseBoardDebug` or leave `Disable Static Pose Debug For Raw Live Test` enabled. The old pose JSON is a static-frame validation pose, so it will keep drawing the cyan board overlay even when the background is live. Live board overlays should only come back after live pose data exists.
-
-If the live image appears once and then freezes, watch the `LensLabWebCamSource` frame-status log. `updatedFrames` should keep increasing. If it does, the camera is live and the display path is the issue; keep `Use Canvas Background For Raw Live Test` enabled. If `updatedFrames` stops increasing, close other camera apps or try a different camera index.
-
-### Unity Resources
-
-- `unity_project/LensLab/Assets/Plugins/LensLab/Resources/LensLab/lenslab_calibration.json`
-- `unity_project/LensLab/Assets/Plugins/LensLab/Resources/LensLab/lenslab_pose.json`
-- `unity_project/LensLab/Assets/Plugins/LensLab/Resources/LensLab/References/pose_reference.png`
-
-## Shared Data Contracts
-
-### Calibration JSON
-
-Primary file:
-
-- `calibration/output/camera_calibration.json`
-
-Contains:
-
-- image resolution
+- camera image width and height
 - `fx`, `fy`, `cx`, `cy`
 - OpenCV rational distortion coefficients
-- calibration target metadata
+- ChArUco target metadata
 - reprojection summary
 
-### Pose JSON
-
-Primary file:
-
-- `calibration/output/pose_estimation/live_000_pose.json`
-
-Contains:
-
-- `rvec` / `tvec`
-- pose reprojection error
-- board-model information exported from OpenCV
-- reference image metadata
-
-## Current Recommended Unity Validation Setup
-
-For the cleanest stage-end validation scene, keep only these scene objects:
-
-### `Main Camera`
-
-Attach:
-
-- `LensLabCameraProjectionController`
-- `LensLabProjectionValidationOverlay`
-- `LensLabPoseBoardDebug`
-
-Recommended references:
-
-- `LensLabCameraProjectionController.Calibration Loader` -> `LensLabBootstrap`
-- `LensLabProjectionValidationOverlay.Calibration Loader` -> `LensLabBootstrap`
-- `LensLabPoseBoardDebug.Pose Loader` -> `LensLabBootstrap`
-- `LensLabPoseBoardDebug.Validation Overlay` -> `Main Camera`
-- `LensLabPoseBoardDebug.Target Camera` -> `Main Camera`
-
-### `LensLabBootstrap`
-
-Attach:
-
-- `LensLabCalibrationLoader`
-- `LensLabPoseLoader`
-
-### `Directional Light`
-
-- default settings are fine
-
-For this stage, legacy helper objects such as the old three-panel undistortion preview UI or projection alignment gizmos are not required in the scene.
-
-## Stage-End Interpretation
-
-The current stage should be interpreted as an offline integration milestone, not a finished runtime plugin.
-
-What is complete:
-
-- the core math/data path from OpenCV to Unity
-- JSON contracts for calibration and pose
-- GPU undistortion correctness against the Python/OpenCV reference path
-- calibrated projection mapping in Unity
-- pose-driven board-region validation
-
-What is not yet complete:
-
-- live camera ingestion
-- real-time pose tracking inside Unity
-- pose smoothing / jitter handling
-- final virtual camera driving workflow
-- packaging as a polished production plugin
-
-## Next Stage
-
-The next stage will focus on runtime-facing content anchoring and reporting:
-
-- replace the static reference image with a live camera background
-- stream or compute live pose updates
-- replace the debug board overlay with virtual content anchored on the detected board
-
-## Decisions Log
-
-### 2026-03-29
-
-Locked project decisions:
-
-1. Build a complete vertical slice before optimization work.
-2. Use JSON as the first shared interchange format.
-3. Treat Python/OpenCV as the source of truth for calibration math.
-4. Centralize OpenCV-to-Unity conversion rather than duplicating it.
-5. Start GPU undistortion with a direct compute-shader implementation.
-
-### 2026-04-10
-
-Milestone closure decisions:
-
-1. The current phase ends after offline pose-to-Unity board validation is working.
-2. `pose_reference.png` is the canonical visual validation image for this milestone.
-3. Scene validation for this phase should be reduced to the smallest useful setup.
-4. Legacy door-frame and multi-panel comparison helpers are no longer the primary validation path.
-
-## Environment
-
-Recommended baseline:
-
-- Windows
-- Unity 2022.3+
-- Python 3.10
-- `opencv-contrib-python`
-- Direct3D 11 capable GPU
-
-Suggested Python packages:
+TCP message format from Python to Unity:
 
 ```text
-numpy
-scipy
-matplotlib
-pyyaml
-jupyter
-opencv-contrib-python
+uint32_le jpeg_len
+jpeg bytes
+uint32_le json_len
+pose json bytes
 ```
+
+Pose JSON maps to `LensLabLivePoseData` and includes:
+
+- `detected`
+- `marker_count`
+- `charuco_corner_count`
+- `rvec`
+- `tvec`
+- `rotation_matrix_flat`
+- `reprojection_error`
+
+## Troubleshooting
+
+If Unity HUD stays `Disconnected`:
+
+- Confirm the `lenslab` conda environment exists.
+- Confirm `opencv-contrib-python` is installed, not plain `opencv-python`.
+- Check Unity Console output from `LensLabPoseServerLauncher`.
+- Make sure port `5555` is not already used by another process.
+
+If Python reports `clients=0`:
+
+- Unity has not connected yet.
+- Check `LensLabPoseClient` host and port.
+- Confirm firewall or security software is not blocking localhost TCP.
+
+If the camera is black or slow:
+
+- Close other apps using the webcam.
+- Try a lower capture size in `LensLabPoseServerLauncher -> Extra Arguments`.
+- Keep MJPG enabled; the server requests it automatically.
+
+If AR content appears misaligned:
+
+- Recalibrate at the same resolution used at runtime.
+- Confirm `lenslab_calibration.json` in Unity Resources matches the latest calibration output.
+- Keep the ChArUco board flat and fully visible.
+
+If Unity reports missing calibration:
+
+- Ensure this file exists:
+
+```text
+unity_project/LensLab/Assets/Plugins/LensLab/Resources/LensLab/lenslab_calibration.json
+```
+
+## Notes
+
+The final demo intentionally uses Python as the camera and pose owner. This avoids Unity `WebCamTexture` performance limits on Windows and lets OpenCV request MJPG directly from the camera. Unity receives only the latest TCP frame and pose, so slow frames are dropped instead of accumulating latency.
 
 ## Author
 
 Julie Yang  
 Computer Science  
 CSE 559a Computer Vision
-
-## License
-
-MIT License

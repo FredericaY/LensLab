@@ -3,22 +3,16 @@ using UnityEngine;
 namespace LensLab.Runtime
 {
     /// <summary>
-    /// Binds a live camera-feed Texture to the projection-validation overlay.
+    /// Binds the TCP live camera feed to the calibrated background plane.
     ///
-    /// Frame source priority:
-    ///   1. LensLabPoseClient (publisher mode — Python owns the camera).
-    ///   2. LensLabWebCamSource (legacy mode — Unity owns the camera). Kept for
-    ///      offline tests; not used in the default scene.
-    ///
-    /// In publisher mode this script does no per-frame GPU work: the PoseClient
-    /// already produces a Texture2D each frame, and we just rebind it to the
-    /// overlay when its identity changes.
+    /// Python owns the webcam and streams JPEG frames over TCP through
+    /// LensLabPoseClient. Unity displays the latest received texture and lets
+    /// LensLabLivePoseReceiver anchor virtual content from the matching pose.
     /// </summary>
     public class LensLabLiveCameraBackground : MonoBehaviour
     {
-        [Header("Frame source (preferred: PoseClient)")]
+        [Header("Frame Source")]
         [SerializeField] private LensLabPoseClient poseClient;
-        [SerializeField] private LensLabWebCamSource webCamSource;
         [SerializeField] private LensLabProjectionValidationOverlay validationOverlay;
         [SerializeField] private LensLabUndistortionController undistortionController;
         [SerializeField] private LensLabCalibrationLoader calibrationLoader;
@@ -28,11 +22,8 @@ namespace LensLab.Runtime
         [SerializeField] private bool runUndistortionEveryCameraFrame = true;
         [SerializeField] private bool useCanvasBackgroundForRawLiveTest = false;
 
-        [Header("Scene Cleanup")]
-        [SerializeField] private bool disableStaticPoseDebugForRawLiveTest = true;
-
-        [Header("Validation")]
-        [SerializeField] private bool warnIfResolutionDiffersFromCalibration = true;
+        [Header("Diagnostics")]
+        [SerializeField] private bool warnIfResolutionDiffersFromCalibration = false;
         [SerializeField] private bool verboseLogging = true;
 
         private Texture lastAppliedTexture;
@@ -49,7 +40,6 @@ namespace LensLab.Runtime
         private void Awake()
         {
             TryAutoAssignDependencies();
-            DisableStaticPoseDebugIfRequested();
         }
 
         private void LateUpdate()
@@ -62,7 +52,7 @@ namespace LensLab.Runtime
         {
             TryAutoAssignDependencies();
 
-            if (validationOverlay == null || (poseClient == null && webCamSource == null))
+            if (validationOverlay == null || poseClient == null)
             {
                 WarnAboutMissingDependenciesOnce();
                 return;
@@ -82,29 +72,26 @@ namespace LensLab.Runtime
                 ? RunUndistortion(sourceTexture)
                 : sourceTexture;
 
-            if (texture == null)
+            if (texture == null || texture == lastAppliedTexture)
             {
                 return;
             }
 
-            if (texture != lastAppliedTexture)
-            {
-                validationOverlay.SetBackgroundRenderMode(
-                    useCanvasBackgroundForRawLiveTest,
-                    !useCanvasBackgroundForRawLiveTest,
-                    false
-                );
-                validationOverlay.SetBackgroundTexture(texture, true);
-                lastAppliedTexture = texture;
+            validationOverlay.SetBackgroundRenderMode(
+                useCanvasBackgroundForRawLiveTest,
+                !useCanvasBackgroundForRawLiveTest,
+                false
+            );
+            validationOverlay.SetBackgroundTexture(texture, true);
+            lastAppliedTexture = texture;
 
-                if (verboseLogging)
-                {
-                    Debug.Log(
-                        $"[{nameof(LensLabLiveCameraBackground)}] Bound live background texture: " +
-                        $"{texture.name} ({texture.width}x{texture.height}).",
-                        this
-                    );
-                }
+            if (verboseLogging)
+            {
+                Debug.Log(
+                    $"[{nameof(LensLabLiveCameraBackground)}] Bound live background texture: " +
+                    $"{texture.name} ({texture.width}x{texture.height}).",
+                    this
+                );
             }
         }
 
@@ -120,30 +107,11 @@ namespace LensLab.Runtime
             UpdateLiveBackground();
         }
 
-        // ------------------------------------------------------------------
-        // Frame source resolution
-        // ------------------------------------------------------------------
-
         private Texture ResolveSourceTexture()
         {
-            // Prefer the network-driven pose client (publisher mode).
             if (poseClient != null && poseClient.HasFrame && poseClient.CurrentTexture != null)
             {
                 return poseClient.CurrentTexture;
-            }
-
-            // Fall back to a locally-owned WebCamTexture (legacy / offline test).
-            if (webCamSource != null)
-            {
-                if (!webCamSource.IsReady)
-                {
-                    if (!webCamSource.IsPlaying)
-                    {
-                        webCamSource.StartCamera();
-                    }
-                    return null;
-                }
-                return webCamSource.CurrentTexture;
             }
 
             return null;
@@ -159,8 +127,7 @@ namespace LensLab.Runtime
                     Debug.LogWarning(
                         $"[{nameof(LensLabLiveCameraBackground)}] " +
                         "Use Gpu Undistortion is enabled but no LensLabUndistortionController is in the scene. " +
-                        "Falling back to the raw camera frame for the background. " +
-                        "Disable 'Use Gpu Undistortion' in the inspector to silence this warning.",
+                        "Falling back to the raw camera frame.",
                         this
                     );
                 }
@@ -168,11 +135,8 @@ namespace LensLab.Runtime
             }
 
             undistortionController.SetInputTexture(source, false);
-            if (runUndistortionEveryCameraFrame && DidSourceUpdateThisFrame())
-            {
-                undistortionController.RunUndistortion();
-            }
-            else if (undistortionController.OutputTexture == null)
+            if ((runUndistortionEveryCameraFrame && poseClient != null && poseClient.DidUpdateThisFrame)
+                || undistortionController.OutputTexture == null)
             {
                 undistortionController.RunUndistortion();
             }
@@ -182,37 +146,16 @@ namespace LensLab.Runtime
                 : source;
         }
 
-        private bool DidSourceUpdateThisFrame()
-        {
-            if (poseClient != null && poseClient.HasFrame)
-            {
-                return poseClient.DidUpdateThisFrame;
-            }
-            return webCamSource != null && webCamSource.DidUpdateThisFrame;
-        }
-
-        // ------------------------------------------------------------------
-        // Dependency wiring
-        // ------------------------------------------------------------------
-
         private void TryAutoAssignDependencies()
         {
             if (poseClient == null)
             {
                 poseClient = GetComponent<LensLabPoseClient>();
             }
+
             if (poseClient == null)
             {
                 poseClient = FindObjectOfType<LensLabPoseClient>(true);
-            }
-
-            if (webCamSource == null)
-            {
-                webCamSource = GetComponent<LensLabWebCamSource>();
-            }
-            if (webCamSource == null)
-            {
-                webCamSource = FindObjectOfType<LensLabWebCamSource>(true);
             }
 
             if (validationOverlay == null)
@@ -231,32 +174,6 @@ namespace LensLab.Runtime
             }
         }
 
-        private void DisableStaticPoseDebugIfRequested()
-        {
-            if (!disableStaticPoseDebugForRawLiveTest)
-            {
-                return;
-            }
-
-            var poseDebug = FindObjectOfType<LensLabPoseBoardDebug>(true);
-            if (poseDebug != null && poseDebug.enabled)
-            {
-                poseDebug.enabled = false;
-                if (verboseLogging)
-                {
-                    Debug.Log(
-                        $"[{nameof(LensLabLiveCameraBackground)}] Disabled {nameof(LensLabPoseBoardDebug)} " +
-                        "for the live camera test. Re-enable it when static pose data should be displayed.",
-                        this
-                    );
-                }
-            }
-        }
-
-        // ------------------------------------------------------------------
-        // Diagnostics
-        // ------------------------------------------------------------------
-
         private void WarnAboutMissingDependenciesOnce()
         {
             if (warnedAboutMissingDependencies)
@@ -267,7 +184,7 @@ namespace LensLab.Runtime
             warnedAboutMissingDependencies = true;
             Debug.LogError(
                 $"[{nameof(LensLabLiveCameraBackground)}] Missing setup. " +
-                $"PoseClient assigned: {poseClient != null}, WebCamSource assigned: {webCamSource != null}, " +
+                $"PoseClient assigned: {poseClient != null}, " +
                 $"ValidationOverlay assigned: {validationOverlay != null}.",
                 this
             );
@@ -325,12 +242,16 @@ namespace LensLab.Runtime
                 return;
             }
 
-            Debug.LogWarning(
-                $"[{nameof(LensLabLiveCameraBackground)}] Frame size {size.x}x{size.y} " +
-                $"does not match calibration {calibration.image_width}x{calibration.image_height}. " +
-                "Use the same resolution for the cleanest projection validation.",
-                this
-            );
+            if (verboseLogging)
+            {
+                Debug.Log(
+                    $"[{nameof(LensLabLiveCameraBackground)}] Frame size {size.x}x{size.y} " +
+                    $"does not match calibration {calibration.image_width}x{calibration.image_height}. " +
+                    "Python scales intrinsics to the actual frame size; use matching resolutions " +
+                    "only for strict validation.",
+                    this
+                );
+            }
         }
     }
 }

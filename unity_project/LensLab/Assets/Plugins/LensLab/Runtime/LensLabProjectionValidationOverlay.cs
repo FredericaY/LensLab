@@ -13,8 +13,8 @@ namespace LensLab.Runtime
 
         [Header("Background")]
         [SerializeField] private Texture backgroundTexture;
-        [SerializeField] private string backgroundResourcesPath = "LensLab/References/pose_reference";
-        [SerializeField] private bool loadBackgroundFromResourcesIfMissing = true;
+        [SerializeField] private string backgroundResourcesPath = "";
+        [SerializeField] private bool loadBackgroundFromResourcesIfMissing = false;
         [SerializeField] private float backgroundDistance = 3f;
         [SerializeField] private bool renderBackgroundInCanvas = false;
         [SerializeField] private bool renderBackgroundInWorldSpace = true;

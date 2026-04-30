@@ -78,7 +78,7 @@ namespace LensLab.Runtime
         [Tooltip("TCP port the server listens on. Must match LensLabPoseClient.serverPort.")]
         [SerializeField] private int port = 5555;
         [Tooltip("Minimum ChArUco corners required for a valid pose. Passed as --min-corners.")]
-        [SerializeField] private int minCorners = 4;
+        [SerializeField] private int minCorners = 6;
         [Tooltip("Print per-frame detection results in the Python console (forwarded to Unity Console).")]
         [SerializeField] private bool verboseServer = true;
 
@@ -470,7 +470,8 @@ namespace LensLab.Runtime
         /// </summary>
         private (string executable, string arguments) BuildCommand(string scriptPath)
         {
-            var serverArgs = $"--port {port} --min-corners {minCorners}";
+            var effectiveMinCorners = Mathf.Max(6, minCorners);
+            var serverArgs = $"--port {port} --min-corners {effectiveMinCorners}";
             if (!verboseServer)
             {
                 serverArgs += " --no-verbose";

@@ -485,27 +485,9 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="LensLab ChArUco calibration entrypoint."
+        description="LensLab live ChArUco calibration entrypoint."
     )
     subparsers = parser.add_subparsers(dest="mode")
-
-    offline_parser = subparsers.add_parser(
-        "offline",
-        help="Calibrate from an existing folder of ChArUco images.",
-    )
-    add_common_arguments(offline_parser)
-    offline_parser.add_argument(
-        "--image-dir",
-        type=Path,
-        default=None,
-        help="Override the offline calibration image directory from the YAML config.",
-    )
-    offline_parser.add_argument(
-        "--image-glob",
-        type=str,
-        default=None,
-        help="Override the image glob from the YAML config.",
-    )
 
     live_parser = subparsers.add_parser(
         "live",
@@ -550,9 +532,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def normalize_argv(argv: Sequence[str] | None) -> list[str]:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
-        return ["offline"]
-    if args[0] not in {"offline", "live", "-h", "--help"}:
-        return ["offline", *args]
+        return ["live"]
+    if args[0] not in {"live", "-h", "--help"}:
+        return ["live", *args]
     return args
 
 
@@ -560,16 +542,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser = build_arg_parser()
     args = parser.parse_args(normalize_argv(argv))
 
-    if args.mode in {None, "offline"}:
-        if __package__:
-            from .offline import run_offline_mode
-        else:
-            from offline import run_offline_mode
-
-        run_offline_mode(args)
-        return
-
-    if args.mode == "live":
+    if args.mode in {None, "live"}:
         if __package__:
             from .live import run_live_mode
         else:
